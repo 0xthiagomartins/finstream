@@ -89,7 +89,7 @@ def init_budget_state():
 
 def render_salary_input():
     """Render the salary input section."""
-    col1, col2, col3 = st.columns([2, 3, 2])
+    col1, col2, col3 = st.columns([2, 4, 3])
 
     with col1:
         st.caption("Monthly Income")
@@ -173,17 +173,15 @@ def render_budget_overview():
 
         # Alternate between left and right columns
         with left_col if i % 2 == 0 else right_col:
-            with st.expander(f"{category} Expenses", expanded=True):
-                render_expense_card(
-                    category=category,
-                    budget_amount=should_spend,
-                    expenses=current_expenses,
-                    on_update=update_expenses,
-                    on_add=add_expense,
-                )
-            # Add vertical spacing between cards in the same column
             st.markdown(
                 "<div style='margin-bottom: 1rem;'></div>", unsafe_allow_html=True
+            )
+            render_expense_card(
+                category=category,
+                budget_amount=should_spend,
+                expenses=current_expenses,
+                on_update=update_expenses,
+                on_add=add_expense,
             )
 
 
@@ -438,7 +436,7 @@ def render_budget_dashboard():
     init_budget_state()
 
     # Title and Salary Input in the same row
-    header_col1, header_col2 = st.columns([4, 3])
+    header_col1, header_col2 = st.columns([5, 2])
 
     with header_col1:
         st.title("Budget Dashboard")

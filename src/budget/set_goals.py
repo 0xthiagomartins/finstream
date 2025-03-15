@@ -173,3 +173,7 @@ def render_budget_goals_page():
                 )
         else:
             st.info("Set your budget goals using the editor")
+
+
+def main():
+    render_budget_goals_page()

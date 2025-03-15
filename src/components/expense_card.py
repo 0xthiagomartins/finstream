@@ -11,18 +11,18 @@ def render_expense_card(
     on_add: callable,
 ):
     """Render an expense card for a specific budget category."""
-    with st.container():
+    with st.container(border=True):
         # Card header with category and total amount
         total_spent = sum(expenses.values())
         percentage_used = (
             (total_spent / budget_amount * 100) if budget_amount > 0 else 0
         )
 
-        header_col1, header_col2 = st.columns([2, 1])
+        header_col1, header_col2 = st.columns([2, 2])
         with header_col1:
             st.subheader(category)
         with header_col2:
-            st.write(f"${total_spent:.2f} / ${budget_amount:.2f}")
+            st.subheader(rf"{total_spent:.2f} / {budget_amount:.2f}")
 
         # Progress bar for budget usage
         st.progress(min(percentage_used / 100, 1.0))
