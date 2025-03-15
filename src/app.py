@@ -1,6 +1,7 @@
 import streamlit as st
 from budget.dashboard import render_budget_dashboard
 from budget.set_goals import render_budget_goals_page
+from streamlit_extras.metric_cards import style_metric_cards
 
 
 def render_first_million():
@@ -12,22 +13,29 @@ def render_net_worth():
 
 
 # Define pages
-goals_page = st.Page(render_budget_goals_page, title="Set Goals", icon="🎯")
-dashboard_page = st.Page(
-    render_budget_dashboard, title="Dashboard", icon="💰", default=True
+goals_page = st.Page(
+    render_budget_goals_page,
+    title="Set Goals",
+    icon=":material/adjust:",
 )
 
+dashboard_page = st.Page(
+    render_budget_dashboard,
+    title="Dashboard",
+    icon=":material/dashboard:",
+    default=True,
+)
 
 first_million_page = st.Page(
     render_first_million,
     title="Goals & First Million",
-    icon="💎",
+    icon=":material/trending_up:",
 )
 
 net_worth_page = st.Page(
     render_net_worth,
     title="Assets vs Liabilities",
-    icon="📊",
+    icon=":material/analytics:",
 )
 
 # Define navigation structure
@@ -41,7 +49,7 @@ pg = st.navigation(
 # Set page configuration
 st.set_page_config(
     page_title="FinStream",
-    page_icon="💰",
+    page_icon=":material/account_balance:",
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
@@ -67,6 +75,11 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True,
+)
+style_metric_cards(
+    background_color="#0E1117",
+    border_color="#ce7e0000",
+    border_left_color="#ce7e00",
 )
 
 # Run the selected page

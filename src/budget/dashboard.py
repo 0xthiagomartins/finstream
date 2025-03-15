@@ -405,15 +405,11 @@ def render_overview_row():
         st.metric(
             "💰 Total Budget",
             f"${total_should_spend:.2f}",
-            delta=f"Monthly Target" if total_should_spend > 0 else None,
-            delta_color="off",
         )
     with summary_col2:
         st.metric(
             "💸 Total Spent",
             f"${total_spent:.2f}",
-            delta=f"{-total_used:.1f}% of Budget Used" if total_used > 0 else None,
-            delta_color="inverse",
         )
     with summary_col3:
         total_remaining = total_should_spend - total_spent
@@ -422,7 +418,7 @@ def render_overview_row():
             f"${total_remaining:.2f}",
             delta=(
                 f"{'Saving' if total_remaining >= 0 else 'Over'} "
-                f"{abs((total_remaining/total_should_spend)*100):.1f}%"
+                f"{abs((total_remaining/total_should_spend)*100):.1f}% of Total Budget"
                 if total_should_spend > 0
                 else None
             ),
