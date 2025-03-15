@@ -88,20 +88,25 @@ def init_budget_state():
 
 
 def render_salary_input():
-    col1, col2 = st.columns([3, 1])
+    """Render the salary input section."""
+    col1, col2, col3 = st.columns([2, 3, 2])
 
     with col1:
+        st.caption("Monthly Income")
+
+    with col2:
         salary = st.number_input(
-            "Enter your monthly salary",
+            "Monthly Income",
             min_value=0.0,
             value=st.session_state.monthly_salary,
             step=100.0,
             format="%.2f",
             key="salary_input",
+            label_visibility="collapsed",
         )
 
-    with col2:
-        if st.button("Update Salary"):
+    with col3:
+        if st.button("Update"):
             st.session_state.monthly_salary = salary
             st.success("Salary updated!")
             st.rerun()
@@ -376,12 +381,17 @@ def render_overview_row():
 
 def render_budget_dashboard():
     """Main function to render the budget dashboard."""
-    st.title("Budget Dashboard")
 
     init_budget_state()
 
-    # Salary Input
-    render_salary_input()
+    # Title and Salary Input in the same row
+    header_col1, header_col2 = st.columns([4, 3])
+
+    with header_col1:
+        st.title("Budget Dashboard")
+
+    with header_col2:
+        render_salary_input()
 
     # Overview Row
     render_overview_row()
