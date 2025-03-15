@@ -195,7 +195,7 @@ def render_overview_row():
 
     # Column 1: Expenses Donut Chart (30%)
     with col1:
-        st.subheader("Actual Expenses")
+        st.subheader("Current Expenses")
 
         # Calculate total expenses by category
         expenses_by_category = {}
@@ -234,7 +234,7 @@ def render_overview_row():
 
     # Column 2: Budget Overview Table (40%)
     with col2:
-        st.subheader("Budget Overview")
+        st.subheader("Overview")
 
         # Prepare data for the overview table
         overview_data = []
@@ -324,7 +324,7 @@ def render_overview_row():
 
     # Column 3: Should Spend Distribution (30%)
     with col3:
-        st.subheader("Budget Distribution")
+        st.subheader("Goal Distribution")
 
         # Calculate should spend amounts
         should_spend_by_category = {
