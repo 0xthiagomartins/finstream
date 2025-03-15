@@ -1,11 +1,8 @@
 import streamlit as st
 from budget.dashboard import render_budget_dashboard
 from budget.set_goals import render_budget_goals_page
+from first_million import render_first_million
 from streamlit_extras.metric_cards import style_metric_cards
-
-
-def render_first_million():
-    st.markdown("Financial goals and projections coming soon...")
 
 
 def render_net_worth():
