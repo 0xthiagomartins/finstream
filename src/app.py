@@ -1,4 +1,5 @@
 import streamlit as st
+from pages.budget_dashboard import render_budget_dashboard
 
 
 def init_session_state():
@@ -24,14 +25,10 @@ def main():
     )
 
     # Main content
-    st.title(st.session_state.current_page)
-
     if st.session_state.current_page == "Budget Dashboard":
-        st.markdown("Budget tracking and analysis coming soon...")
-
+        render_budget_dashboard()
     elif st.session_state.current_page == "Goals & First Million":
         st.markdown("Financial goals and projections coming soon...")
-
     elif st.session_state.current_page == "Assets vs Liabilities":
         st.markdown("Net worth tracking coming soon...")
 
