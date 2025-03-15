@@ -78,6 +78,13 @@ def render_expense_card(
 
         with metrics_col1:
             st.metric(
+                "Budget",
+                f"${budget_amount:.2f}",
+                delta=None,
+            )
+
+        with metrics_col2:
+            st.metric(
                 "Total Spent",
                 f"${total_spent:.2f}",
                 delta=(
@@ -86,13 +93,6 @@ def render_expense_card(
                     else None
                 ),
                 delta_color="inverse",
-            )
-
-        with metrics_col2:
-            st.metric(
-                "Budget",
-                f"${budget_amount:.2f}",
-                delta=None,
             )
 
         with metrics_col3:

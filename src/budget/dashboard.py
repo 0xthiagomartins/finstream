@@ -25,7 +25,7 @@ def init_budget_state():
             ],
         }
     if "monthly_salary" not in st.session_state:
-        st.session_state.monthly_salary = 5000.0  # Default salary for demonstration
+        st.session_state.monthly_salary = 10000.0  # Default salary for demonstration
 
     # Initialize expenses if not set
     if "expenses" not in st.session_state:
