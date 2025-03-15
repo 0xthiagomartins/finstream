@@ -193,7 +193,7 @@ def render_overview_row():
         return
 
     # Update column proportions to 27.5/45/27.5
-    col1, col2, col3 = st.columns([27.5, 45, 27.5])
+    col1, col2, col3 = st.columns([25, 50, 25])
 
     # Column 1: Expenses Donut Chart (30%)
     with col1:
@@ -251,8 +251,12 @@ def render_overview_row():
             total_spent += spent
             total_should_spend += should_spend
 
+            # Calculate status and color
+            status = "🟢" if used_percentage <= 100 else "🔴"
+
             overview_data.append(
                 {
+                    "Status": status,
                     "Budget": category,
                     "Spent": spent,
                     "Should Spend": should_spend,
@@ -267,6 +271,7 @@ def render_overview_row():
         )
         overview_data.append(
             {
+                "Status": "🟢" if total_used <= 100 else "🔴",
                 "Budget": "TOTAL",
                 "Spent": total_spent,
                 "Should Spend": total_should_spend,
@@ -277,9 +282,15 @@ def render_overview_row():
 
         # Convert to DataFrame and display with enhanced styling
         df = pd.DataFrame(overview_data)
+
         st.dataframe(
             df,
             column_config={
+                "Status": st.column_config.TextColumn(
+                    "Status",
+                    help="Budget status indicator",
+                    width="small",
+                ),
                 "Budget": st.column_config.TextColumn(
                     "Category",
                     help="Budget category",
@@ -348,30 +359,72 @@ def render_overview_row():
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    # Monthly Summary below the three components
-    st.markdown("---")
+    # Add custom CSS for summary metrics
+    st.markdown(
+        """
+        <style>
+            [data-testid="metric-container"] {
+                background-color: #262730;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            [data-testid="metric-container"] > div {
+                width: 100%;
+            }
+            
+            [data-testid="metric-container"] label {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-transform: uppercase;
+                font-size: 0.875rem !important;
+                font-weight: 600;
+                letter-spacing: 0.05em;
+            }
+            
+            /* Metric value styling */
+            [data-testid="metric-container"] div[data-testid="metric-value"] {
+                font-size: 1.875rem !important;
+                font-weight: 700;
+                font-family: 'JetBrains Mono', monospace !important;
+            }
+            
+            /* Delta value styling */
+            [data-testid="metric-container"] div[data-testid="metric-delta"] {
+                font-size: 0.875rem !important;
+                font-weight: 500;
+            }
+        </style>
+    """,
+        unsafe_allow_html=True,
+    )
+
     summary_col1, summary_col2, summary_col3 = st.columns(3)
 
     with summary_col1:
         st.metric(
-            "Total Budget",
+            "💰 Total Budget",
             f"${total_should_spend:.2f}",
-            delta=None,
+            delta=f"Monthly Target" if total_should_spend > 0 else None,
+            delta_color="off",
         )
     with summary_col2:
         st.metric(
-            "Total Spent",
+            "💸 Total Spent",
             f"${total_spent:.2f}",
-            delta=f"{-total_used:.1f}%" if total_used > 0 else None,
+            delta=f"{-total_used:.1f}% of Budget Used" if total_used > 0 else None,
             delta_color="inverse",
         )
     with summary_col3:
         total_remaining = total_should_spend - total_spent
         st.metric(
-            "Remaining",
+            "✨ Remaining",
             f"${total_remaining:.2f}",
             delta=(
-                f"{(total_remaining/total_should_spend)*100:.1f}%"
+                f"{'Saving' if total_remaining >= 0 else 'Over'} "
+                f"{abs((total_remaining/total_should_spend)*100):.1f}%"
                 if total_should_spend > 0
                 else None
             ),
@@ -393,6 +446,7 @@ def render_budget_dashboard():
     with header_col2:
         render_salary_input()
 
+    st.markdown("---")  #
     # Overview Row
     render_overview_row()
 
