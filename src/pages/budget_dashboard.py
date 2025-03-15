@@ -80,43 +80,7 @@ def render_goal_setting():
     ):
         col1, col2 = st.columns(2)
 
-        # Column 1: Donut Chart
-        with col1:
-            # Create a donut chart for current allocations
-            if st.session_state.budget_goal:
-                fig = go.Figure(
-                    data=[
-                        go.Pie(
-                            values=list(
-                                st.session_state.budget_goal.allocations.values()
-                            ),
-                            labels=list(
-                                st.session_state.budget_goal.allocations.keys()
-                            ),
-                            hole=0.6,
-                            textinfo="label+percent",
-                            marker_colors=px.colors.qualitative.Set3,
-                        )
-                    ]
-                )
-                fig.update_layout(
-                    title="Budget Allocation",
-                    showlegend=False,
-                    annotations=[
-                        dict(
-                            text=f"{sum(st.session_state.budget_goal.allocations.values()):.1f}%<br>Allocated",
-                            x=0.5,
-                            y=0.5,
-                            font_size=14,
-                            showarrow=False,
-                        )
-                    ],
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("Set your budget goals using the sliders")
-
-        # Column 2: Sliders
+        # Column 2: Sliders (moved to top to calculate values first)
         with col2:
             allocations = {}
             remaining = 100.0
@@ -143,14 +107,61 @@ def render_goal_setting():
 
             st.info(f"Remaining allocation: {remaining:.1f}%")
 
-            if st.button("Save Budget Goals"):
-                try:
-                    st.session_state.budget_goal = BudgetGoal(allocations)
-                    st.success("Budget goals saved!")
-                    # Force a rerun to update the donut chart
-                    st.rerun()
-                except ValueError as e:
-                    st.error(str(e))
+            # Only show save button if there are changes to persist
+            current_allocation = {k: v for k, v in allocations.items() if v > 0}
+            if (
+                st.session_state.budget_goal is None
+                or current_allocation != st.session_state.budget_goal.allocations
+            ):
+                if st.button(
+                    "Save Budget Goals",
+                    disabled=abs(remaining)
+                    > 0.01,  # Allow small floating point differences
+                ):
+                    try:
+                        st.session_state.budget_goal = BudgetGoal(allocations)
+                        st.success("Budget goals saved!")
+                        st.rerun()
+                    except ValueError as e:
+                        st.error(str(e))
+
+        # Column 1: Donut Chart
+        with col1:
+            # Show current allocations even if not saved
+            if allocations:
+                total = sum(allocations.values())
+                if abs(100 - total) <= 0.01:  # Check if total is approximately 100%
+                    fig = go.Figure(
+                        data=[
+                            go.Pie(
+                                values=list(allocations.values()),
+                                labels=list(allocations.keys()),
+                                hole=0.6,
+                                textinfo="label+percent",
+                                marker_colors=px.colors.qualitative.Set3,
+                            )
+                        ]
+                    )
+                    fig.update_layout(
+                        title="Budget Allocation",
+                        showlegend=False,
+                        annotations=[
+                            dict(
+                                text=f"{total:.1f}%<br>Allocated",
+                                x=0.5,
+                                y=0.5,
+                                font_size=14,
+                                showarrow=False,
+                            )
+                        ],
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning(
+                        f"Total allocation ({total:.1f}%) must equal 100% to visualize"
+                    )
+            else:
+                st.info("Set your budget goals using the sliders")
 
 
 def render_budget_planning():
