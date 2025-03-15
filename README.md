@@ -8,6 +8,31 @@ FinStream is a simple and interactive personal finance dashboard built with Stre
 - **Goals & First Million**: Set financial targets and estimate time to reach your first million.
 - **Assets vs Liabilities**: Track net worth by managing assets and debts.
 
+## Project Structure
+```
+finstream/
+├── src/                    # Source code
+│   ├── __init__.py
+│   ├── app.py             # Main Streamlit application
+│   ├── pages/             # Streamlit pages
+│   ├── models/            # Data models
+│   ├── utils/             # Helper functions
+│   └── config/            # Configuration files
+├── tests/                 # Test files
+│   ├── __init__.py
+│   ├── test_models/
+│   └── test_utils/
+├── sprints/              # Sprint planning and documentation
+│   ├── sprint1/
+│   ├── sprint2/
+│   └── sprint3/
+├── data/                 # Data storage (if needed)
+├── docs/                 # Documentation
+├── requirements.txt      # Project dependencies
+├── README.md
+└── ROADMAP.md
+```
+
 ## Installation
 1. Clone the repository:
    ```bash
@@ -22,7 +47,7 @@ FinStream is a simple and interactive personal finance dashboard built with Stre
    ```
 3. Run the Streamlit app:
    ```bash
-   streamlit run app.py
+   streamlit run src/app.py
    ```
 
 ## Dependencies
