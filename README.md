@@ -3,6 +3,8 @@
 ## Overview
 FinStream is a simple and interactive personal finance dashboard built with Streamlit. It helps users manage their budget, set financial goals, track net worth, and visualize financial progress.
 
+![image](./assets/dashboard_demo.png)
+
 ## Features
 - **Budget Tracker**: Log income and expenses, visualize spending trends.
 - **Goals & First Million**: Set financial targets and estimate time to reach your first million.
