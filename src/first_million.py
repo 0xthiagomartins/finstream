@@ -98,6 +98,61 @@ def create_aport_amounts(
         return [round(base_aport * (ratio**i), 2) for i in range(qtd)]
 
 
+def calculate_year_ranges(
+    initial_amount: float,
+    desired_amount: float,
+    monthly_income: float,
+    annual_return: float = 0.10,
+    min_years: int = 5,
+    max_years: int = 40,
+    num_points: int = 7,
+) -> List[int]:
+    """Calculate appropriate year ranges based on user inputs."""
+    # Calculate minimum years needed with maximum reasonable investment (50% of monthly income)
+    max_monthly_investment = monthly_income * 0.5
+
+    # Find minimum years needed using binary search
+    min_years_needed = min_years
+    max_years_needed = max_years
+
+    while min_years_needed < max_years_needed:
+        mid_years = (min_years_needed + max_years_needed) // 2
+        future_value = calculate_future_value(
+            initial_amount, max_monthly_investment, mid_years, annual_return
+        )
+
+        if future_value >= desired_amount:
+            max_years_needed = mid_years
+        else:
+            min_years_needed = mid_years + 1
+
+    # Calculate optimal year ranges
+    min_range = max(min_years, min_years_needed - 5)
+    max_range = min(max_years, min_years_needed + 20)
+
+    # Create evenly spaced year points
+    step = max((max_range - min_range) // (num_points - 1), 1)
+    year_ranges = list(range(min_range, max_range + 1, step))
+
+    # Ensure we have exactly num_points
+    while len(year_ranges) > num_points:
+        # Remove points from the middle to maintain start and end
+        idx = len(year_ranges) // 2
+        year_ranges.pop(idx)
+
+    while len(year_ranges) < num_points:
+        # Add points in the largest gaps
+        gaps = [
+            (year_ranges[i + 1] - year_ranges[i], i)
+            for i in range(len(year_ranges) - 1)
+        ]
+        max_gap, idx = max(gaps)
+        new_year = year_ranges[idx] + max_gap // 2
+        year_ranges.insert(idx + 1, new_year)
+
+    return sorted(year_ranges)
+
+
 def render_first_million():
     """Render the First Million calculator page."""
     st.title("Goals & First Million")
@@ -173,12 +228,21 @@ def render_first_million():
         calculate = st.form_submit_button("Calculate Projections", type="primary")
 
     if calculate:
-        year_ranges = [10, 15, 20, 25, 30, 35, 40]
-        # Calculate minimum aport needed for 10 years
+        # Calculate dynamic year ranges
+        year_ranges = calculate_year_ranges(
+            initial_amount=initial_amount,
+            desired_amount=desired_amount,
+            monthly_income=st.session_state.monthly_income,
+            min_years=5,
+            max_years=40,
+            num_points=7,
+        )
+
+        # Calculate minimum aport needed for first year in range
         min_aport = calculate_minimum_aport(
             initial_amount=initial_amount,
             desired_amount=desired_amount,
-            years=year_ranges[0],  # First item in year_ranges
+            years=year_ranges[0],
         )
 
         # Create aport amounts based on annual income and minimum required
@@ -241,16 +305,19 @@ def render_first_million():
         # Create accumulation plot
         fig = go.Figure()
 
+        # Create detailed year range for plot (year by year)
+        plot_years = list(range(1, max(year_ranges) + 1))
+
         # Add a line for each aport amount
         for aport in aport_amounts:
             y_values = [
                 calculate_future_value(initial_amount, aport, year)
-                for year in year_ranges
+                for year in plot_years
             ]
 
             fig.add_trace(
                 go.Scatter(
-                    x=year_ranges,
+                    x=plot_years,
                     y=y_values,
                     name=f"${aport:,.2f}/month",
                     hovertemplate="Year %{x}<br>Amount: $%{y:,.2f}<extra></extra>",
@@ -280,10 +347,24 @@ def render_first_million():
             xaxis=dict(
                 gridcolor="#2e3026",
                 tickformat="d",
+                # Add tick for each year
+                dtick=1,
             ),
             yaxis=dict(
                 gridcolor="#2e3026",
                 tickformat="$,.0f",
+                range=[
+                    0,
+                    min(
+                        desired_amount * 1.5,  # Maximum 5x the goal
+                        max(
+                            desired_amount * 1.5,  # Minimum +20% of goal
+                            max(
+                                y_values
+                            ),  # But never less than maximum projected value
+                        ),
+                    ),
+                ],
             ),
         )
 
