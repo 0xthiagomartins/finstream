@@ -1,5 +1,6 @@
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime
 from models.transaction import Transaction, TransactionType
 from models.budget_goal import BudgetGoal
@@ -77,37 +78,79 @@ def render_goal_setting():
     with st.expander(
         "Set Budget Goals", expanded=not bool(st.session_state.budget_goal)
     ):
-        allocations = {}
-        remaining = 100.0
+        col1, col2 = st.columns(2)
 
-        for category in st.session_state.categories["expense"]:
-            current = 0.0
+        # Column 1: Donut Chart
+        with col1:
+            # Create a donut chart for current allocations
             if st.session_state.budget_goal:
-                current = float(
-                    st.session_state.budget_goal.allocations.get(category, 0.0)
+                fig = go.Figure(
+                    data=[
+                        go.Pie(
+                            values=list(
+                                st.session_state.budget_goal.allocations.values()
+                            ),
+                            labels=list(
+                                st.session_state.budget_goal.allocations.keys()
+                            ),
+                            hole=0.6,
+                            textinfo="label+percent",
+                            marker_colors=px.colors.qualitative.Set3,
+                        )
+                    ]
+                )
+                fig.update_layout(
+                    title="Budget Allocation",
+                    showlegend=False,
+                    annotations=[
+                        dict(
+                            text=f"{sum(st.session_state.budget_goal.allocations.values()):.1f}%<br>Allocated",
+                            x=0.5,
+                            y=0.5,
+                            font_size=14,
+                            showarrow=False,
+                        )
+                    ],
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Set your budget goals using the sliders")
+
+        # Column 2: Sliders
+        with col2:
+            allocations = {}
+            remaining = 100.0
+
+            for category in st.session_state.categories["expense"]:
+                current = 0.0
+                if st.session_state.budget_goal:
+                    current = float(
+                        st.session_state.budget_goal.allocations.get(category, 0.0)
+                    )
+
+                value = st.slider(
+                    f"{category} (%)",
+                    min_value=0.0,
+                    max_value=100.0,
+                    value=float(current),
+                    step=1.0,
+                    key=f"goal_{category}",
                 )
 
-            value = st.slider(
-                f"{category} (%)",
-                min_value=0.0,
-                max_value=100.0,
-                value=float(current),
-                step=1.0,
-                key=f"goal_{category}",
-            )
+                if value > 0:
+                    allocations[category] = float(value)
+                    remaining -= value
 
-            if value > 0:
-                allocations[category] = float(value)
-                remaining -= value
+            st.info(f"Remaining allocation: {remaining:.1f}%")
 
-        st.info(f"Remaining allocation: {remaining:.1f}%")
-
-        if st.button("Save Budget Goals"):
-            try:
-                st.session_state.budget_goal = BudgetGoal(allocations)
-                st.success("Budget goals saved!")
-            except ValueError as e:
-                st.error(str(e))
+            if st.button("Save Budget Goals"):
+                try:
+                    st.session_state.budget_goal = BudgetGoal(allocations)
+                    st.success("Budget goals saved!")
+                    # Force a rerun to update the donut chart
+                    st.rerun()
+                except ValueError as e:
+                    st.error(str(e))
 
 
 def render_budget_planning():
