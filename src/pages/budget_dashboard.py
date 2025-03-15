@@ -2,20 +2,14 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
-from models.transaction import Transaction, TransactionType
 from models.budget_goal import BudgetGoal
-from utils.visualizations import (
-    create_monthly_spending_chart,
-    create_income_vs_expenses_chart,
-    create_category_breakdown_pie,
-    create_budget_planning_chart,
-)
+from components.expense_card import render_expense_card
+from typing import Dict
+import pandas as pd
 
 
 def init_budget_state():
     """Initialize session state variables for budget tracking."""
-    if "transactions" not in st.session_state:
-        st.session_state.transactions = []
     if "categories" not in st.session_state:
         st.session_state.categories = {
             "income": ["Salary", "Investments", "Other"],
@@ -30,230 +24,367 @@ def init_budget_state():
                 "Education",
             ],
         }
+    if "monthly_salary" not in st.session_state:
+        st.session_state.monthly_salary = 5000.0  # Default salary for demonstration
+
+    # Initialize expenses if not set
+    if "expenses" not in st.session_state:
+        st.session_state.expenses = {
+            "Housing": {
+                "Rent": 1200.0,
+                "Insurance": 100.0,
+                "Maintenance": 200.0,
+            },
+            "Food": {
+                "Groceries": 400.0,
+                "Dining Out": 200.0,
+            },
+            "Transportation": {
+                "Gas": 150.0,
+                "Car Insurance": 100.0,
+                "Public Transit": 50.0,
+            },
+            "Utilities": {
+                "Electricity": 80.0,
+                "Water": 40.0,
+                "Internet": 60.0,
+                "Phone": 70.0,
+            },
+            "Entertainment": {
+                "Streaming Services": 30.0,
+                "Movies": 40.0,
+                "Hobbies": 80.0,
+            },
+            "Investment": {
+                "Stock Market": 800.0,
+                "Emergency Fund": 200.0,
+            },
+            "Travel": {
+                "Vacation Fund": 250.0,
+            },
+            "Education": {
+                "Online Courses": 150.0,
+                "Books": 50.0,
+            },
+        }
+
+    # Initialize default budget goals if not set
     if "budget_goal" not in st.session_state:
-        st.session_state.budget_goal = None
+        default_allocations = {
+            "Housing": 30.0,  # Common rule of thumb for housing
+            "Food": 15.0,  # Essential expense
+            "Transportation": 10.0,
+            "Utilities": 10.0,
+            "Entertainment": 5.0,
+            "Investment": 20.0,  # Savings/investment
+            "Travel": 5.0,
+            "Education": 5.0,
+        }
+        try:
+            st.session_state.budget_goal = BudgetGoal(default_allocations)
+        except ValueError as e:
+            st.error(f"Error setting default budget goals: {str(e)}")
+            st.session_state.budget_goal = None
 
 
-def render_transaction_form():
-    """Render the transaction entry form."""
-    with st.form("transaction_form"):
-        col1, col2 = st.columns(2)
+def render_salary_input():
+    col1, col2 = st.columns([3, 1])
 
-        with col1:
-            transaction_type = st.selectbox(
-                "Type",
-                options=[t.value for t in TransactionType],
-                key="transaction_type",
+    with col1:
+        salary = st.number_input(
+            "Enter your monthly salary",
+            min_value=0.0,
+            value=st.session_state.monthly_salary,
+            step=100.0,
+            format="%.2f",
+            key="salary_input",
+        )
+
+    with col2:
+        if st.button("Update Salary"):
+            st.session_state.monthly_salary = salary
+            st.success("Salary updated!")
+            st.rerun()
+
+
+def update_expenses(category: str, expenses: Dict[str, float]):
+    """Update expenses for a category."""
+    if "expenses" not in st.session_state:
+        st.session_state.expenses = {}
+    st.session_state.expenses[category] = expenses
+    st.rerun()
+
+
+def add_expense(category: str, description: str, amount: float):
+    """Add a new expense to a category."""
+    if "expenses" not in st.session_state:
+        st.session_state.expenses = {}
+    if category not in st.session_state.expenses:
+        st.session_state.expenses[category] = {}
+
+    st.session_state.expenses[category][description] = amount
+    st.rerun()
+
+
+def render_budget_overview():
+    """Render the budget overview section with expense cards."""
+    if not st.session_state.budget_goal:
+        st.warning("Please set your budget goals first in the Budget Goals page")
+        return
+
+    if st.session_state.monthly_salary <= 0:
+        st.warning("Please set your monthly salary above")
+        return
+
+    # Initialize expenses in session state if needed
+    if "expenses" not in st.session_state:
+        st.session_state.expenses = {}
+
+    # Add section title
+    st.markdown("---")  # Horizontal line for visual separation
+    st.header("Edit Expenses")
+    st.markdown("Manage your expenses for each budget category")
+
+    # Add spacing style
+    st.markdown(
+        """
+        <style>
+            div[data-testid="stExpander"] {
+                margin-bottom: 1.5rem;
+            }
+        </style>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    # Create two columns for expense cards
+    left_col, right_col = st.columns(2)
+
+    # Distribute cards between columns
+    categories = list(st.session_state.budget_goal.allocations.items())
+    for i, (category, percentage) in enumerate(categories):
+        should_spend = st.session_state.monthly_salary * (percentage / 100)
+        current_expenses = st.session_state.expenses.get(category, {})
+
+        # Alternate between left and right columns
+        with left_col if i % 2 == 0 else right_col:
+            with st.expander(f"{category} Expenses", expanded=True):
+                render_expense_card(
+                    category=category,
+                    budget_amount=should_spend,
+                    expenses=current_expenses,
+                    on_update=update_expenses,
+                    on_add=add_expense,
+                )
+            # Add vertical spacing between cards in the same column
+            st.markdown(
+                "<div style='margin-bottom: 1rem;'></div>", unsafe_allow_html=True
             )
 
-            amount = st.number_input("Amount", min_value=0.01, step=0.01, key="amount")
 
-        with col2:
-            category_list = st.session_state.categories[
-                "income" if transaction_type == "income" else "expense"
-            ]
-            category = st.selectbox("Category", options=category_list, key="category")
-
-            description = st.text_input("Description (optional)", key="description")
-
-        if st.form_submit_button("Add Transaction"):
-            try:
-                transaction = Transaction(
-                    amount=amount,
-                    type=TransactionType(transaction_type),
-                    category=category,
-                    description=description,
-                    date=datetime.now(),
-                )
-                st.session_state.transactions.append(transaction)
-                st.success("Transaction added successfully!")
-            except ValueError as e:
-                st.error(f"Error: {str(e)}")
-
-
-def render_goal_setting():
-    """Render the budget goal setting interface."""
-    st.subheader("Budget Planning")
-
-    with st.expander(
-        "Set Budget Goals", expanded=not bool(st.session_state.budget_goal)
-    ):
-        col1, col2 = st.columns(2)
-
-        # Column 2: Sliders (moved to top to calculate values first)
-        with col2:
-            allocations = {}
-            remaining = 100.0
-
-            for category in st.session_state.categories["expense"]:
-                current = 0.0
-                if st.session_state.budget_goal:
-                    current = float(
-                        st.session_state.budget_goal.allocations.get(category, 0.0)
-                    )
-
-                value = st.slider(
-                    f"{category} (%)",
-                    min_value=0.0,
-                    max_value=100.0,
-                    value=float(current),
-                    step=1.0,
-                    key=f"goal_{category}",
-                )
-
-                if value > 0:
-                    allocations[category] = float(value)
-                    remaining -= value
-
-            st.info(f"Remaining allocation: {remaining:.1f}%")
-
-            # Only show save button if there are changes to persist
-            current_allocation = {k: v for k, v in allocations.items() if v > 0}
-            if (
-                st.session_state.budget_goal is None
-                or current_allocation != st.session_state.budget_goal.allocations
-            ):
-                if st.button(
-                    "Save Budget Goals",
-                    disabled=abs(remaining)
-                    > 0.01,  # Allow small floating point differences
-                ):
-                    try:
-                        st.session_state.budget_goal = BudgetGoal(allocations)
-                        st.success("Budget goals saved!")
-                        st.rerun()
-                    except ValueError as e:
-                        st.error(str(e))
-
-        # Column 1: Donut Chart
-        with col1:
-            # Show current allocations even if not saved
-            if allocations:
-                total = sum(allocations.values())
-                if abs(100 - total) <= 0.01:  # Check if total is approximately 100%
-                    fig = go.Figure(
-                        data=[
-                            go.Pie(
-                                values=list(allocations.values()),
-                                labels=list(allocations.keys()),
-                                hole=0.6,
-                                textinfo="label+percent",
-                                marker_colors=px.colors.qualitative.Set3,
-                            )
-                        ]
-                    )
-                    fig.update_layout(
-                        title="Budget Allocation",
-                        showlegend=False,
-                        annotations=[
-                            dict(
-                                text=f"{total:.1f}%<br>Allocated",
-                                x=0.5,
-                                y=0.5,
-                                font_size=14,
-                                showarrow=False,
-                            )
-                        ],
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.warning(
-                        f"Total allocation ({total:.1f}%) must equal 100% to visualize"
-                    )
-            else:
-                st.info("Set your budget goals using the sliders")
-
-
-def render_budget_planning():
-    """Render the budget planning visualization."""
+def render_overview_row():
+    """Render the overview row with three components."""
     if not st.session_state.budget_goal:
         return
 
-    st.subheader("Budget Plan")
+    # Update column proportions to 27.5/45/27.5
+    col1, col2, col3 = st.columns([27.5, 45, 27.5])
 
-    # Get latest income transaction for planning
-    income_transactions = [
-        t for t in st.session_state.transactions if t.type == TransactionType.INCOME
-    ]
-
-    if not income_transactions:
-        st.warning("Add income to see budget planning")
-        return
-
-    latest_income = max(income_transactions, key=lambda t: t.date)
-
-    # Show planned allocations
-    col1, col2 = st.columns(2)
-
+    # Column 1: Expenses Donut Chart (30%)
     with col1:
-        st.metric("Monthly Income", f"${latest_income.amount:.2f}")
+        st.subheader("Actual Expenses")
+
+        # Calculate total expenses by category
+        expenses_by_category = {}
+        for category, expenses in st.session_state.expenses.items():
+            total = sum(expenses.values())
+            if total > 0:  # Only include categories with expenses
+                expenses_by_category[category] = total
+
+        if expenses_by_category:
+            fig = go.Figure(
+                data=[
+                    go.Pie(
+                        values=list(expenses_by_category.values()),
+                        labels=list(expenses_by_category.keys()),
+                        hole=0.6,
+                        textinfo="label+percent",
+                        marker_colors=px.colors.qualitative.Set3,
+                    )
+                ]
+            )
+            fig.update_layout(
+                showlegend=False,
+                annotations=[
+                    dict(
+                        text=f"${sum(expenses_by_category.values()):.2f}",
+                        x=0.5,
+                        y=0.5,
+                        font_size=14,
+                        showarrow=False,
+                    )
+                ],
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No expenses recorded yet")
+
+    # Column 2: Budget Overview Table (40%)
+    with col2:
+        st.subheader("Budget Overview")
+
+        # Prepare data for the overview table
+        overview_data = []
+        total_spent = 0
+        total_should_spend = 0
 
         for category, percentage in st.session_state.budget_goal.allocations.items():
-            planned_amount = latest_income.amount * (percentage / 100)
-            st.metric(f"{category} Budget", f"${planned_amount:.2f}", f"{percentage}%")
+            should_spend = st.session_state.monthly_salary * (percentage / 100)
+            spent = sum(st.session_state.expenses.get(category, {}).values())
+            used_percentage = (spent / should_spend * 100) if should_spend > 0 else 0
 
-    with col2:
-        fig = create_budget_planning_chart(
-            latest_income.amount, st.session_state.budget_goal
+            total_spent += spent
+            total_should_spend += should_spend
+
+            overview_data.append(
+                {
+                    "Budget": category,
+                    "Spent": spent,
+                    "Should Spend": should_spend,
+                    "Used": used_percentage,
+                    "Remaining": should_spend - spent,
+                }
+            )
+
+        # Add total row
+        total_used = (
+            (total_spent / total_should_spend * 100) if total_should_spend > 0 else 0
+        )
+        overview_data.append(
+            {
+                "Budget": "TOTAL",
+                "Spent": total_spent,
+                "Should Spend": total_should_spend,
+                "Used": total_used,
+                "Remaining": total_should_spend - total_spent,
+            }
+        )
+
+        # Convert to DataFrame and display with enhanced styling
+        df = pd.DataFrame(overview_data)
+        st.dataframe(
+            df,
+            column_config={
+                "Budget": st.column_config.TextColumn(
+                    "Category",
+                    help="Budget category",
+                ),
+                "Spent": st.column_config.NumberColumn(
+                    "Spent",
+                    help="Amount spent so far",
+                    min_value=0.0,
+                    format="$%.2f",
+                ),
+                "Should Spend": st.column_config.NumberColumn(
+                    "Should Spend",
+                    help="Budgeted amount",
+                    min_value=0.0,
+                    format="$%.2f",
+                ),
+                "Used": st.column_config.ProgressColumn(
+                    "Used %",
+                    help="Percentage of budget used",
+                    format="%.1f%%",
+                    min_value=0,
+                    max_value=100,
+                ),
+                "Remaining": st.column_config.NumberColumn(
+                    "Remaining",
+                    help="Amount left in budget",
+                    format="$%.2f",
+                ),
+            },
+            hide_index=True,
+            use_container_width=True,
+        )
+
+    # Column 3: Should Spend Distribution (30%)
+    with col3:
+        st.subheader("Budget Distribution")
+
+        # Calculate should spend amounts
+        should_spend_by_category = {
+            category: st.session_state.monthly_salary * (percentage / 100)
+            for category, percentage in st.session_state.budget_goal.allocations.items()
+        }
+
+        fig = go.Figure(
+            data=[
+                go.Pie(
+                    values=list(should_spend_by_category.values()),
+                    labels=list(should_spend_by_category.keys()),
+                    hole=0.6,
+                    textinfo="label+percent",
+                    marker_colors=px.colors.qualitative.Set3,
+                )
+            ]
+        )
+        fig.update_layout(
+            showlegend=False,
+            annotations=[
+                dict(
+                    text=f"${sum(should_spend_by_category.values()):.2f}",
+                    x=0.5,
+                    y=0.5,
+                    font_size=14,
+                    showarrow=False,
+                )
+            ],
         )
         st.plotly_chart(fig, use_container_width=True)
 
+    # Monthly Summary below the three components
+    st.markdown("---")
+    summary_col1, summary_col2, summary_col3 = st.columns(3)
 
-def render_visualizations():
-    """Render budget visualization charts."""
-    if not st.session_state.transactions:
-        return
-
-    st.subheader("Budget Analytics")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        # Monthly spending chart
-        fig = create_monthly_spending_chart(st.session_state.transactions)
-        if fig:
-            st.plotly_chart(fig, use_container_width=True)
-
-        # Category breakdown
-        fig = create_category_breakdown_pie(st.session_state.transactions)
-        if fig:
-            st.plotly_chart(fig, use_container_width=True)
-
-    with col2:
-        # Income vs Expenses
-        fig = create_income_vs_expenses_chart(st.session_state.transactions)
-        if fig:
-            st.plotly_chart(fig, use_container_width=True)
+    with summary_col1:
+        st.metric(
+            "Total Budget",
+            f"${total_should_spend:.2f}",
+            delta=None,
+        )
+    with summary_col2:
+        st.metric(
+            "Total Spent",
+            f"${total_spent:.2f}",
+            delta=f"{-total_used:.1f}%" if total_used > 0 else None,
+            delta_color="inverse",
+        )
+    with summary_col3:
+        total_remaining = total_should_spend - total_spent
+        st.metric(
+            "Remaining",
+            f"${total_remaining:.2f}",
+            delta=(
+                f"{(total_remaining/total_should_spend)*100:.1f}%"
+                if total_should_spend > 0
+                else None
+            ),
+            delta_color="normal" if total_remaining >= 0 else "inverse",
+        )
 
 
 def render_budget_dashboard():
     """Main function to render the budget dashboard."""
-    st.header("Budget Dashboard")
+    st.title("Budget Dashboard")
 
     init_budget_state()
 
-    # Goal Setting
-    render_goal_setting()
+    # Salary Input
+    render_salary_input()
 
-    # Transaction Form
-    st.subheader("Add New Transaction")
-    render_transaction_form()
+    # Overview Row
+    render_overview_row()
 
-    # Budget Planning
-    render_budget_planning()
-
-    # Visualizations
-    render_visualizations()
-
-    # Transaction History
-    if st.session_state.transactions:
-        st.subheader("Recent Transactions")
-        for transaction in reversed(st.session_state.transactions[-5:]):
-            with st.expander(
-                f"{transaction.date.strftime('%Y-%m-%d %H:%M')} - {transaction.type.value.title()}: ${transaction.amount:.2f}"
-            ):
-                st.write(f"Category: {transaction.category}")
-                if transaction.description:
-                    st.write(f"Description: {transaction.description}")
-    else:
-        st.info("No transactions recorded yet.")
+    # Budget Overview Section with Cards
+    render_budget_overview()
