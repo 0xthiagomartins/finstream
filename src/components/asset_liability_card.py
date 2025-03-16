@@ -11,7 +11,7 @@ def render_asset_liability_card(
     is_asset: bool = True,
 ):
     """Render an asset/liability card for a specific category."""
-    with st.container(border=True):
+    with st.container():
         # Card header with category and total amount
         total_amount = sum(items.values())
 

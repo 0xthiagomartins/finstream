@@ -253,21 +253,25 @@ def render_net_worth():
     st.subheader("Edit Assets & Liabilities")
     col1, col2 = st.columns(2)
     with col1:
-        for category in ASSET_CATEGORIES:
-            render_asset_liability_card(
-                category=category,
-                items=st.session_state.assets[category],
-                on_update=lambda cat, df: update_items(cat, df, True),
-                on_add=lambda cat, name, amount: add_item(cat, name, amount, True),
-                is_asset=True,
-            )
+        with st.container(border=True):
+            for category in ASSET_CATEGORIES:
+                render_asset_liability_card(
+                    category=category,
+                    items=st.session_state.assets[category],
+                    on_update=lambda cat, df: update_items(cat, df, True),
+                    on_add=lambda cat, name, amount: add_item(cat, name, amount, True),
+                    is_asset=True,
+                )
+                st.markdown("---")
 
     with col2:
-        for category in LIABILITY_CATEGORIES:
-            render_asset_liability_card(
-                category=category,
-                items=st.session_state.liabilities[category],
-                on_update=lambda cat, df: update_items(cat, df, False),
-                on_add=lambda cat, name, amount: add_item(cat, name, amount, False),
-                is_asset=False,
-            )
+        with st.container(border=True):
+            for category in LIABILITY_CATEGORIES:
+                render_asset_liability_card(
+                    category=category,
+                    items=st.session_state.liabilities[category],
+                    on_update=lambda cat, df: update_items(cat, df, False),
+                    on_add=lambda cat, name, amount: add_item(cat, name, amount, False),
+                    is_asset=False,
+                )
+                st.markdown("---")
