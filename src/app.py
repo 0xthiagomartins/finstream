@@ -2,11 +2,8 @@ import streamlit as st
 from budget.dashboard import render_budget_dashboard
 from budget.set_goals import render_budget_goals_page
 from first_million import render_first_million
+from net_worth import render_net_worth
 from streamlit_extras.metric_cards import style_metric_cards
-
-
-def render_net_worth():
-    st.markdown("Net worth tracking coming soon...")
 
 
 # Define pages
@@ -31,8 +28,8 @@ first_million_page = st.Page(
 
 net_worth_page = st.Page(
     render_net_worth,
-    title="Assets vs Liabilities",
-    icon=":material/analytics:",
+    title="Net Worth",
+    icon=":material/account_balance_wallet:",
 )
 
 # Define navigation structure
