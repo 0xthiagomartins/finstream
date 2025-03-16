@@ -88,41 +88,15 @@ def display_token_info(token: dict, token_data: dict = None):
         return
 
     with st.container(border=True):
-        # Add custom container styling
-        st.markdown(
-            """
-            <style>
-                [data-testid="stContainer"] {
-                    background-color: #1E1E1E;
-                    border-radius: 10px;
-                    padding: 1rem;
-                }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
 
-        col1, col2 = st.columns([1, 3])
+        if token_data:
+            price = token_data["market_data"]["current_price"]["usd"]
+            mcap = token_data["market_data"]["market_cap"]["usd"]
+            col1, col2 = st.columns([1, 1])
 
-        with col1:
-            if token.get("large"):
-                st.image(token["large"], width=64, use_container_width="never")
-
-        with col2:
-            st.markdown(
-                f"""
-                <h3 style='margin-bottom: 0.5rem;'>
-                    {token['name']} 
-                    <span style='color: #666;'>({token['symbol'].upper()})</span>
-                </h3>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            if token_data:
-                price = token_data["market_data"]["current_price"]["usd"]
-                mcap = token_data["market_data"]["market_cap"]["usd"]
-
+            with col1:
+                if token.get("large"):
+                    st.image(token["large"], width=64, use_container_width="never")
                 # Price metric with custom formatting
                 st.metric(
                     label="Price",
@@ -130,6 +104,16 @@ def display_token_info(token: dict, token_data: dict = None):
                     help="Current token price in USD",
                 )
 
+            with col2:
+                st.markdown(
+                    f"""
+                    <h3 style='margin-bottom: 0.5rem;'>
+                        {token['name']} 
+                        <span style='color: #666;'>({token['symbol'].upper()})</span>
+                    </h3>
+                    """,
+                    unsafe_allow_html=True,
+                )
                 # Market cap metric with custom formatting
                 st.metric(
                     label="Market Cap",
@@ -137,20 +121,8 @@ def display_token_info(token: dict, token_data: dict = None):
                     help="Total market capitalization",
                 )
 
-                # Add 24h change if available
-                if "price_change_percentage_24h" in token_data["market_data"]:
-                    change_24h = token_data["market_data"][
-                        "price_change_percentage_24h"
-                    ]
-                    st.metric(
-                        label="24h Change",
-                        value=f"{change_24h:.2f}%",
-                        delta=f"{change_24h:.2f}%",
-                        delta_color="normal" if change_24h >= 0 else "inverse",
-                    )
-
-            elif token.get("market_cap_rank"):
-                st.caption(f"🏆 Rank #{token['market_cap_rank']}")
+        elif token.get("market_cap_rank"):
+            st.caption(f"🏆 Rank #{token['market_cap_rank']}")
 
 
 def display_comparison(
@@ -232,7 +204,7 @@ def display_comparison(
 def render_marketcap_dashboard():
     """Render the enhanced Market Cap Of dashboard."""
     # Header with enhanced styling
-    st.title("🔄 Market Cap Of")
+    st.title("Market Cap Of")
     st.markdown(
         """
         <div style='background-color: #1E1E1E; padding: 1rem; border-radius: 5px; margin-bottom: 2rem;'>
@@ -247,13 +219,13 @@ def render_marketcap_dashboard():
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("📈 Token 1")
+        st.subheader("Token 1")
         query1, token1, token1_data = create_token_search("first token", "token1")
         if token1:
             display_token_info(token1, token1_data)
 
     with col2:
-        st.subheader("📊 Token 2")
+        st.subheader("Token 2")
         query2, token2, token2_data = create_token_search("second token", "token2")
         if token2:
             display_token_info(token2, token2_data)
