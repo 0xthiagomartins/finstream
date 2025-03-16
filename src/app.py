@@ -3,6 +3,7 @@ from budget.dashboard import render_budget_dashboard
 from budget.set_goals import render_budget_goals_page
 from first_million import render_first_million
 from net_worth import render_net_worth
+from crypto.marketcapof import render_marketcap_dashboard
 from streamlit_extras.metric_cards import style_metric_cards
 
 
@@ -32,11 +33,18 @@ net_worth_page = st.Page(
     icon=":material/account_balance_wallet:",
 )
 
+marketcap_of_page = st.Page(
+    render_marketcap_dashboard,
+    title="Marketcap Of",
+    icon=":material/currency_bitcoin:",
+)
+
 # Define navigation structure
 pg = st.navigation(
     {
         "Budget Management": [goals_page, dashboard_page],
         "Financial Planning": [first_million_page, net_worth_page],
+        "Crypto": [marketcap_of_page],
     }
 )
 

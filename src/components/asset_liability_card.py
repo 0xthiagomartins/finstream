@@ -21,27 +21,26 @@ def render_asset_liability_card(
         with header_col2:
             st.subheader(f"${total_amount:,.2f}")
 
-        # Items table with enhanced styling
-        if items:
-            df = pd.DataFrame(
-                [{"Item": name, "Amount": amount} for name, amount in items.items()]
-            )
-            edited_df = st.data_editor(
-                df,
-                column_config={
-                    "Amount": st.column_config.NumberColumn(
-                        "Amount",
-                        format="$%.2f",
-                        required=True,
-                        min_value=0,
-                    ),
-                    "Item": st.column_config.TextColumn(
-                        "Item",
-                        required=True,
-                    ),
-                },
-                hide_index=True,
-                num_rows="dynamic",
-                key=f"{category}_{'asset' if is_asset else 'liability'}_table",
-                on_change=lambda: on_update(category, edited_df),
-            )
+        df = pd.DataFrame(
+            [[name, amount] for name, amount in items.items()],
+            columns=["Item", "Amount"],
+        )
+        edited_df = st.data_editor(
+            df,
+            column_config={
+                "Amount": st.column_config.NumberColumn(
+                    "Amount",
+                    format="$%.2f",
+                    required=True,
+                    min_value=0,
+                ),
+                "Item": st.column_config.TextColumn(
+                    "Item",
+                    required=True,
+                ),
+            },
+            hide_index=True,
+            num_rows="dynamic",
+            key=f"{category}_{'asset' if is_asset else 'liability'}_table",
+            on_change=lambda: on_update(category, edited_df),
+        )
