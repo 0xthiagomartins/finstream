@@ -24,7 +24,15 @@ class CoinGeckoAPI:
 
     def get_coin_data(self, coin_id: str) -> dict:
         """Get detailed data for a specific coin."""
-        return self._make_request(f"coins/{coin_id}")
+        return self._make_request(
+            f"coins/{coin_id}",
+            {
+                "localization": "false",
+                "tickers": "false",
+                "community_data": "false",
+                "developer_data": "false",
+            },
+        )
 
     def search_coins(self, query: str) -> dict:
         """Search for coins by name or symbol."""
