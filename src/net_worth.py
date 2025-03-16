@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 from typing import Dict, List, Tuple
 from datetime import datetime
 from components.asset_liability_card import render_asset_liability_card
+from utils.data_manager import save_current_state, load_saved_state
 
 # Asset and Liability Categories
 ASSET_CATEGORIES = [
@@ -89,13 +90,26 @@ def initialize_session_state():
     if "net_worth_history" not in st.session_state:
         st.session_state.net_worth_history = []
 
-    # Add demo data button
-    if st.sidebar.button("Load Demo Data"):
-        add_mock_data()
-        st.rerun()
+    # Data persistence controls
+    col1, col2, col3 = st.sidebar.columns(3)
+
+    with col1:
+        if st.button("Load Saved", help="Load data from CSV files"):
+            load_saved_state()
+            st.rerun()
+
+    with col2:
+        if st.button("Save Data", help="Save current data to CSV"):
+            save_current_state()
+            st.success("Data saved successfully!")
+
+    with col3:
+        if st.button("Load Demo"):
+            add_mock_data()
+            st.rerun()
 
     # Clear data button
-    if st.sidebar.button("Clear All Data"):
+    if st.sidebar.button("Clear All", type="secondary"):
         st.session_state.assets = {cat: {} for cat in ASSET_CATEGORIES}
         st.session_state.liabilities = {cat: {} for cat in LIABILITY_CATEGORIES}
         st.session_state.net_worth_history = []
@@ -110,6 +124,8 @@ def update_items(category: str, df: pd.DataFrame, is_asset: bool = True):
         for _, row in df.iterrows()
         if row["Item"] and row["Amount"] > 0
     }
+    # Auto-save on update
+    save_current_state()
 
 
 def add_item(category: str, name: str, amount: float, is_asset: bool = True):

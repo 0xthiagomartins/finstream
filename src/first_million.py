@@ -4,6 +4,7 @@ import numpy as np
 from typing import List, Dict
 from math import ceil
 import plotly.graph_objects as go
+from utils.data_manager import save_current_state, load_saved_state
 
 
 def calculate_future_value(
@@ -153,10 +154,45 @@ def calculate_year_ranges(
     return sorted(year_ranges)
 
 
+def save_first_million_inputs(
+    initial_amount: float,
+    desired_amount: float,
+    annual_income: float,
+    monthly_income: float,
+):
+    """Save first million calculator inputs."""
+    st.session_state.first_million_config = {
+        "initial_amount": initial_amount,
+        "desired_amount": desired_amount,
+        "annual_income": annual_income,
+        "monthly_income": monthly_income,
+    }
+    save_current_state()
+
+
 def render_first_million():
     """Render the First Million calculator page."""
     st.title("Goals & First Million")
     st.markdown("Calculate your path to financial independence")
+
+    # Data persistence controls
+    col1, col2 = st.sidebar.columns(2)
+
+    with col1:
+        if st.button("Load Saved", help="Load data from CSV files"):
+            load_saved_state()
+            if "first_million_config" in st.session_state:
+                config = st.session_state.first_million_config
+                st.session_state.annual_income = config.get("annual_income", 100_000.0)
+                st.session_state.monthly_income = config.get(
+                    "monthly_income", st.session_state.annual_income / 12
+                )
+            st.rerun()
+
+    with col2:
+        if st.button("Save Data", help="Save current data to CSV"):
+            save_current_state()
+            st.success("Data saved successfully!")
 
     # Initialize session state for income values if not exists
     if "annual_income" not in st.session_state:
@@ -228,6 +264,13 @@ def render_first_million():
         calculate = st.form_submit_button("Calculate Projections", type="primary")
 
     if calculate:
+        save_first_million_inputs(
+            initial_amount,
+            desired_amount,
+            st.session_state.annual_income,
+            st.session_state.monthly_income,
+        )
+
         # Calculate dynamic year ranges
         year_ranges = calculate_year_ranges(
             initial_amount=initial_amount,

@@ -3,11 +3,82 @@ import plotly.express as px
 import plotly.graph_objects as go
 from models.budget_goal import BudgetGoal
 import pandas as pd
+from utils.data_manager import save_budget_state, load_budget_state
+from typing import Dict
+
+
+def load_demo_goals():
+    """Load demo budget goals data."""
+    # Demo budget allocations
+    demo_allocations = {
+        "Housing": 30.0,  # Common rule of thumb for housing
+        "Food": 15.0,  # Essential expense
+        "Transportation": 10.0,
+        "Utilities": 10.0,
+        "Entertainment": 5.0,
+        "Investment": 20.0,  # Savings/investment
+        "Travel": 5.0,
+        "Education": 5.0,
+    }
+
+    # Set budget goals
+    try:
+        st.session_state.budget_goal = BudgetGoal(demo_allocations)
+        st.session_state.budget_goals = demo_allocations
+        save_budget_state(
+            demo_allocations,
+            st.session_state.expenses,
+            st.session_state.monthly_salary,
+        )
+        st.success("Demo goals loaded successfully!")
+    except ValueError as e:
+        st.error(f"Error setting demo budget goals: {str(e)}")
+        st.session_state.budget_goal = None
+
+
+def save_budget_goals(allocations: Dict[str, float]):
+    """Save budget goals and create BudgetGoal object."""
+    try:
+        budget_goal = BudgetGoal(allocations)
+        st.session_state.budget_goal = budget_goal
+        st.session_state.budget_goals = allocations
+        save_budget_state(
+            allocations, st.session_state.expenses, st.session_state.monthly_salary
+        )
+        return True
+    except ValueError as e:
+        st.error(str(e))
+        return False
 
 
 def render_budget_goals_page():
     """Render the budget goals page."""
     st.title("Budget Goals")
+
+    # Data persistence controls
+    col1, col2, col3 = st.sidebar.columns(3)
+
+    with col1:
+        if st.button("Load Saved", help="Load data from CSV files"):
+            load_budget_state()
+            st.rerun()
+
+    with col2:
+        if st.button("Save Data", help="Save current data to CSV"):
+            if st.session_state.budget_goals:
+                save_budget_state(
+                    st.session_state.budget_goals,
+                    st.session_state.expenses,
+                    st.session_state.monthly_salary,
+                )
+                st.success("Data saved successfully!")
+            else:
+                st.warning("Please set budget goals before saving")
+
+    with col3:
+        if st.button("Load Demo", help="Load demo goals"):
+            load_demo_goals()
+            st.rerun()
 
     if "categories" not in st.session_state:
         st.error("Categories not initialized. Please visit the Budget Dashboard first.")
@@ -80,39 +151,42 @@ def render_budget_goals_page():
         else:
             st.success("Perfect allocation: 100%")
 
-        # Convert edited values to allocations dict
-        allocations = {
-            row["Category"]: row["Current"]
-            for _, row in edited_df.iterrows()
-            if row["Current"] > 0
-        }
-
-        # Save button
+        # Save button handling
         if st.button(
             "Save Budget Goals",
             disabled=abs(remaining) > 0.01,  # Allow small floating point differences
             type="primary",
             use_container_width=True,
         ):
-            try:
-                st.session_state.budget_goal = BudgetGoal(allocations)
+            allocations = {
+                row["Category"]: row["Current"]
+                for _, row in edited_df.iterrows()
+                if row["Current"] > 0
+            }
+            if save_budget_goals(allocations):
                 st.success("Budget goals saved successfully!")
                 st.rerun()
-            except ValueError as e:
-                st.error(str(e))
 
     # Column 1: Visualization
     with col1:
         st.markdown("### Budget Distribution")
-        if allocations:
-            # Show current allocations even if not saved
-            total = sum(allocations.values())
+
+        # Get current allocations from the edited DataFrame
+        current_allocations = {
+            row["Category"]: row["Current"]
+            for _, row in edited_df.iterrows()
+            if row["Current"] > 0
+        }
+
+        # Show visualization if we have allocations
+        if current_allocations:
+            total = sum(current_allocations.values())
             if abs(100 - total) <= 0.01:  # Check if total is approximately 100%
                 fig = go.Figure(
                     data=[
                         go.Pie(
-                            values=list(allocations.values()),
-                            labels=list(allocations.keys()),
+                            values=list(current_allocations.values()),
+                            labels=list(current_allocations.keys()),
                             hole=0.6,
                             textinfo="label+percent",
                             marker_colors=px.colors.qualitative.Set3,
@@ -133,47 +207,17 @@ def render_budget_goals_page():
                     ],
                 )
                 st.plotly_chart(fig, use_container_width=True)
-
-                # Add a table showing monthly amounts based on salary
-                if st.session_state.monthly_salary > 0:
-                    st.markdown("### Monthly Breakdown")
-                    monthly_data = [
-                        {
-                            "Category": cat,
-                            "Percentage": f"{pct:.1f}%",
-                            "Monthly Amount": f"${st.session_state.monthly_salary * (pct/100):.2f}",
-                        }
-                        for cat, pct in allocations.items()
-                    ]
-                    st.dataframe(
-                        pd.DataFrame(monthly_data),
-                        column_config={
-                            "Category": st.column_config.TextColumn(
-                                "Category",
-                                help="Budget category",
-                                width="medium",
-                            ),
-                            "Percentage": st.column_config.TextColumn(
-                                "Allocation",
-                                help="Percentage of total budget",
-                                width="small",
-                            ),
-                            "Monthly Amount": st.column_config.TextColumn(
-                                "Monthly Amount",
-                                help="Dollar amount based on monthly salary",
-                                width="medium",
-                            ),
-                        },
-                        hide_index=True,
-                        use_container_width=True,
-                    )
             else:
-                st.warning(
-                    f"Total allocation ({total:.1f}%) must equal 100% to visualize"
-                )
+                st.info("Total allocation must equal 100% to visualize")
         else:
             st.info("Set your budget goals using the editor")
 
 
 def main():
     render_budget_goals_page()
+
+
+def update_goals(goals: dict):
+    """Update budget goals and save to CSV."""
+    st.session_state.budget_goals = goals
+    save_budget_state()

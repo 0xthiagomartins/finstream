@@ -6,6 +6,80 @@ from models.budget_goal import BudgetGoal
 from components.expense_card import render_expense_card
 from typing import Dict
 import pandas as pd
+from utils.data_manager import (
+    save_current_state,
+    load_saved_state,
+    save_budget_state,
+    load_budget_state,
+)
+
+
+def load_demo_data():
+    """Load demo data for budget dashboard."""
+    # Demo expenses data
+    st.session_state.expenses = {
+        "Housing": {
+            "Rent": 1200.0,
+            "Insurance": 100.0,
+            "Maintenance": 200.0,
+        },
+        "Food": {
+            "Groceries": 400.0,
+            "Dining Out": 200.0,
+        },
+        "Transportation": {
+            "Gas": 150.0,
+            "Car Insurance": 100.0,
+            "Public Transit": 50.0,
+        },
+        "Utilities": {
+            "Electricity": 80.0,
+            "Water": 40.0,
+            "Internet": 60.0,
+            "Phone": 70.0,
+        },
+        "Entertainment": {
+            "Streaming Services": 30.0,
+            "Movies": 40.0,
+            "Hobbies": 80.0,
+        },
+        "Investment": {
+            "Stock Market": 800.0,
+            "Emergency Fund": 200.0,
+        },
+        "Travel": {
+            "Vacation Fund": 250.0,
+        },
+        "Education": {
+            "Online Courses": 150.0,
+            "Books": 50.0,
+        },
+    }
+
+    # Demo budget goals
+    demo_allocations = {
+        "Housing": 30.0,  # Common rule of thumb for housing
+        "Food": 15.0,  # Essential expense
+        "Transportation": 10.0,
+        "Utilities": 10.0,
+        "Entertainment": 5.0,
+        "Investment": 20.0,  # Savings/investment
+        "Travel": 5.0,
+        "Education": 5.0,
+    }
+
+    # Set demo monthly salary
+    st.session_state.monthly_salary = 10000.0
+
+    # Set budget goals
+    try:
+        st.session_state.budget_goal = BudgetGoal(demo_allocations)
+    except ValueError as e:
+        st.error(f"Error setting demo budget goals: {str(e)}")
+        st.session_state.budget_goal = None
+
+    # Save demo data
+    save_current_state()
 
 
 def init_budget_state():
@@ -25,66 +99,47 @@ def init_budget_state():
             ],
         }
     if "monthly_salary" not in st.session_state:
-        st.session_state.monthly_salary = 10000.0  # Default salary for demonstration
+        st.session_state.monthly_salary = 0.0  # Start with zero
 
     # Initialize expenses if not set
     if "expenses" not in st.session_state:
-        st.session_state.expenses = {
-            "Housing": {
-                "Rent": 1200.0,
-                "Insurance": 100.0,
-                "Maintenance": 200.0,
-            },
-            "Food": {
-                "Groceries": 400.0,
-                "Dining Out": 200.0,
-            },
-            "Transportation": {
-                "Gas": 150.0,
-                "Car Insurance": 100.0,
-                "Public Transit": 50.0,
-            },
-            "Utilities": {
-                "Electricity": 80.0,
-                "Water": 40.0,
-                "Internet": 60.0,
-                "Phone": 70.0,
-            },
-            "Entertainment": {
-                "Streaming Services": 30.0,
-                "Movies": 40.0,
-                "Hobbies": 80.0,
-            },
-            "Investment": {
-                "Stock Market": 800.0,
-                "Emergency Fund": 200.0,
-            },
-            "Travel": {
-                "Vacation Fund": 250.0,
-            },
-            "Education": {
-                "Online Courses": 150.0,
-                "Books": 50.0,
-            },
-        }
+        st.session_state.expenses = {}  # Start with empty dict
 
-    # Initialize default budget goals if not set
+        # Initialize with empty categories
+        for category in st.session_state.categories["expense"]:
+            st.session_state.expenses[category] = {}
+
+    # Initialize budget goals and goal object if not set
+    if "budget_goals" not in st.session_state:
+        st.session_state.budget_goals = {}
+
     if "budget_goal" not in st.session_state:
-        default_allocations = {
-            "Housing": 30.0,  # Common rule of thumb for housing
-            "Food": 15.0,  # Essential expense
-            "Transportation": 10.0,
-            "Utilities": 10.0,
-            "Entertainment": 5.0,
-            "Investment": 20.0,  # Savings/investment
-            "Travel": 5.0,
-            "Education": 5.0,
-        }
-        try:
-            st.session_state.budget_goal = BudgetGoal(default_allocations)
-        except ValueError as e:
-            st.error(f"Error setting default budget goals: {str(e)}")
-            st.session_state.budget_goal = None
+        st.session_state.budget_goal = None
+
+    # Data persistence controls
+    col1, col2, col3 = st.sidebar.columns(3)
+
+    with col1:
+        if st.button("Load Saved", help="Load data from CSV files"):
+            load_budget_state()
+            st.rerun()
+
+    with col2:
+        if st.button("Save Data", help="Save current data to CSV"):
+            if st.session_state.budget_goals:  # Only save if we have goals
+                save_budget_state(
+                    st.session_state.budget_goals,
+                    st.session_state.expenses,
+                    st.session_state.monthly_salary,
+                )
+                st.success("Data saved successfully!")
+            else:
+                st.warning("Please set budget goals before saving")
+
+    with col3:
+        if st.button("Load Demo", help="Load demo data"):
+            load_demo_data()
+            st.rerun()
 
 
 def render_salary_input():
@@ -114,20 +169,18 @@ def render_salary_input():
 
 def update_expenses(category: str, expenses: Dict[str, float]):
     """Update expenses for a category."""
-    if "expenses" not in st.session_state:
-        st.session_state.expenses = {}
     st.session_state.expenses[category] = expenses
+    save_current_state()
     st.rerun()
 
 
-def add_expense(category: str, description: str, amount: float):
-    """Add a new expense to a category."""
-    if "expenses" not in st.session_state:
-        st.session_state.expenses = {}
+def add_expense(category: str, description: str, amount: float, date: str):
+    """Add a new expense and save to CSV."""
     if category not in st.session_state.expenses:
         st.session_state.expenses[category] = {}
 
     st.session_state.expenses[category][description] = amount
+    save_current_state()
     st.rerun()
 
 
