@@ -296,7 +296,6 @@ def render_marketcap_dashboard():
         and st.session_state.token1_data
         and st.session_state.token2_data
     ):
-        st.markdown("---")
 
         # Add invert comparison button
         col1, col2, col3 = st.columns([2, 1, 2])
