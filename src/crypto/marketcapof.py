@@ -15,10 +15,20 @@ def format_large_number(num: float) -> str:
         return f"${num:,.2f}"
 
 
-def calculate_theoretical_price(token1_data: dict, token2_data: dict) -> float:
+def calculate_theoretical_price(
+    token1_data: dict, token2_data: dict, use_ath: bool = False
+) -> float:
     """Calculate what token1's price would be with token2's market cap."""
     token1_supply = token1_data["market_data"]["circulating_supply"]
-    token2_mcap = token2_data["market_data"]["market_cap"]["usd"]
+
+    if use_ath:
+        # Use ATH market cap calculation
+        ath_price = token2_data["market_data"]["ath"]["usd"]
+        current_supply = token2_data["market_data"]["circulating_supply"]
+        token2_mcap = ath_price * current_supply
+    else:
+        # Use current market cap
+        token2_mcap = token2_data["market_data"]["market_cap"]["usd"]
 
     return token2_mcap / token1_supply
 
@@ -165,20 +175,62 @@ def display_comparison(
 ):
     """Display enhanced market cap comparison between two tokens."""
 
+    # Create a container for the toggle and title
+    with st.container():
+        # Center-align toggle with custom styling
+        st.markdown(
+            """
+            <style>
+                [data-testid="stToggleButton"] {
+                    width: 100%;
+                    justify-content: center;
+                }
+                .stToggleButton p {
+                    font-size: 1.1rem;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # Add toggle for ATH comparison with better positioning
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            use_ath = st.toggle(
+                f"Compare with {token2['symbol'].upper()} ATH",
+                help=(
+                    f"Toggle between {token2['symbol'].upper()}'s current market cap "
+                    f"and All-Time High reached on "
+                    f"{token2_data['market_data']['ath_date']['usd'].split('T')[0]}"
+                ),
+            )
+
     # Center title with token names
+    title_suffix = "ATH Market Cap" if use_ath else "Current Market Cap"
     st.markdown(
         f"""
-        <div style='text-align: center; padding: 2rem;'>
+        <div style='text-align: center; padding: 1rem;'>
             <h2>
-                <b style='color: #ce7e00;'>${token1['symbol']}</b> With The Market Cap of <b style='color: #ce7e00;'>${token2['symbol']}</b>
+                <b style='color: #ce7e00;'>${token1['symbol'].upper()}</b> 
+                With 
+                <b style='color: #ce7e00;'>${token2['symbol'].upper()}'s</b> 
+                {title_suffix}
             </h2>
+            <p style='color: #666; margin-top: 0.5rem;'>
+                {
+                    f"ATH Price: ${token2_data['market_data']['ath']['usd']:,.2f} "
+                    f"({token2_data['market_data']['ath_date']['usd'].split('T')[0]})"
+                    if use_ath else
+                    f"Current Price: ${token2_data['market_data']['current_price']['usd']:,.2f}"
+                }
+            </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     # Calculate values
-    theoretical_price = calculate_theoretical_price(token1_data, token2_data)
+    theoretical_price = calculate_theoretical_price(token1_data, token2_data, use_ath)
     current_price = token1_data["market_data"]["current_price"]["usd"]
     price_multiplier = theoretical_price / current_price
 
@@ -219,10 +271,15 @@ def display_comparison(
 
         # Arrow and multiplier
         with col2:
-            mcap_ratio = (
-                token2_data["market_data"]["market_cap"]["usd"]
-                / token1_data["market_data"]["market_cap"]["usd"]
-            )
+            if use_ath:
+                ath_price = token2_data["market_data"]["ath"]["usd"]
+                current_supply = token2_data["market_data"]["circulating_supply"]
+                target_mcap = ath_price * current_supply
+            else:
+                target_mcap = token2_data["market_data"]["market_cap"]["usd"]
+
+            mcap_ratio = target_mcap / token1_data["market_data"]["market_cap"]["usd"]
+
             st.markdown(
                 f"""
                 <div style='text-align: center; font-size: 2rem; margin: 1rem 0;'>
@@ -234,18 +291,24 @@ def display_comparison(
             st.metric(
                 label="Market Cap Difference",
                 value=f"{mcap_ratio:.2f}x",
-                help=f"How many times larger {token2['symbol'].upper()}'s market cap is",
+                help=f"How many times larger {token2['symbol'].upper()}'s {'ATH' if use_ath else 'current'} market cap is",
             )
 
         # Target market cap
         with col3:
-            st.metric(
-                label=f"{token2['symbol'].upper()} Market Cap",
-                value=format_large_number(
-                    token2_data["market_data"]["market_cap"]["usd"]
-                ),
-                help="Target market capitalization",
-            )
+            if use_ath:
+                ath_date = token2_data["market_data"]["ath_date"]["usd"].split("T")[0]
+                st.metric(
+                    label=f"{token2['symbol'].upper()} ATH Market Cap",
+                    value=format_large_number(target_mcap),
+                    help=f"All-Time High market cap (reached on {ath_date})",
+                )
+            else:
+                st.metric(
+                    label=f"{token2['symbol'].upper()} Market Cap",
+                    value=format_large_number(target_mcap),
+                    help="Current market capitalization",
+                )
 
 
 def render_marketcap_dashboard():
