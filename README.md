@@ -15,21 +15,19 @@ FinStream is a simple and interactive personal finance dashboard built with Stre
 ```
 finstream/
 ├── src/                    # Source code
-│   ├── __init__.py
 │   ├── app.py             # Main Streamlit application
-│   ├── pages/             # Streamlit pages
 │   ├── models/            # Data models
 │   ├── utils/             # Helper functions
 │   └── config/            # Configuration files
 ├── tests/                 # Test files
-│   ├── __init__.py
+│   ├── conftest.py
 │   ├── test_models/
 │   └── test_utils/
+├── .streamlit/
+│   └── config.toml
 ├── sprints/              # Sprint planning and documentation
 │   ├── sprint1/
-│   ├── sprint2/
-│   └── sprint3/
-├── data/                 # Data storage (if needed)
+│   └── sprint2/
 ├── docs/                 # Documentation
 ├── requirements.txt      # Project dependencies
 ├── README.md
