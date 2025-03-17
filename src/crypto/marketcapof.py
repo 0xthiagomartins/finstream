@@ -175,35 +175,17 @@ def display_comparison(
 ):
     """Display enhanced market cap comparison between two tokens."""
 
-    # Create a container for the toggle and title
-    with st.container():
-        # Center-align toggle with custom styling
-        st.markdown(
-            """
-            <style>
-                [data-testid="stToggleButton"] {
-                    width: 100%;
-                    justify-content: center;
-                }
-                .stToggleButton p {
-                    font-size: 1.1rem;
-                }
-            </style>
-            """,
-            unsafe_allow_html=True,
+    # Add toggle for ATH comparison with better positioning
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col2:
+        use_ath = st.toggle(
+            f"Compare with {token2['symbol'].upper()} ATH",
+            help=(
+                f"Toggle between {token2['symbol'].upper()}'s current market cap "
+                f"and All-Time High reached on "
+                f"{token2_data['market_data']['ath_date']['usd'].split('T')[0]}"
+            ),
         )
-
-        # Add toggle for ATH comparison with better positioning
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            use_ath = st.toggle(
-                f"Compare with {token2['symbol'].upper()} ATH",
-                help=(
-                    f"Toggle between {token2['symbol'].upper()}'s current market cap "
-                    f"and All-Time High reached on "
-                    f"{token2_data['market_data']['ath_date']['usd'].split('T')[0]}"
-                ),
-            )
 
     # Center title with token names
     title_suffix = "ATH Market Cap" if use_ath else "Current Market Cap"
@@ -333,36 +315,24 @@ def render_marketcap_dashboard():
 
     # Token selection columns
     col1, col2 = st.columns(2)
-
     with col1:
         st.subheader("Token 1")
         token1, token1_data = create_token_search("first token", "token1")
-        if token1 and isinstance(token1, dict):
+    with col2:
+        st.subheader("Token 2")
+        token2, token2_data = create_token_search("second token", "token2")
+
+    if (token1 and isinstance(token1, dict)) and (token2 and isinstance(token2, dict)):
+        col1, col2, col3 = st.columns([3, 1, 3])
+
+        with col1:
             display_token_info(token1, token1_data)
             # Update main session state
             st.session_state.token1 = token1
             st.session_state.token1_data = token1_data
 
-    with col2:
-        st.subheader("Token 2")
-        token2, token2_data = create_token_search("second token", "token2")
-        if token2 and isinstance(token2, dict):
-            display_token_info(token2, token2_data)
-            # Update main session state
-            st.session_state.token2 = token2
-            st.session_state.token2_data = token2_data
-
-    # Show comparison when both tokens are selected
-    if (
-        st.session_state.token1
-        and st.session_state.token2
-        and st.session_state.token1_data
-        and st.session_state.token2_data
-    ):
-
-        # Add invert comparison button
-        col1, col2, col3 = st.columns([2, 1, 2])
         with col2:
+            st.markdown("---")
             if st.button("🔄 Invert Comparison", use_container_width=True):
                 # Swap main tokens
                 (
@@ -416,9 +386,21 @@ def render_marketcap_dashboard():
                     st.session_state["search_query_token2"],
                     st.session_state["search_query_token1"],
                 )
-
                 st.rerun()
+            st.markdown("---")
+        with col3:
+            display_token_info(token2, token2_data)
+            # Update main session state
+            st.session_state.token2 = token2
+            st.session_state.token2_data = token2_data
 
+    # Show comparison when both tokens are selected
+    if (
+        st.session_state.token1
+        and st.session_state.token2
+        and st.session_state.token1_data
+        and st.session_state.token2_data
+    ):
         display_comparison(
             st.session_state.token1,
             st.session_state.token1_data,
