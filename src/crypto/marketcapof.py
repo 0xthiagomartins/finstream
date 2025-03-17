@@ -184,13 +184,15 @@ def display_token_info(token: dict, token_data: dict = None):
 
             # Price row
             price_from_ath = ((price - ath_price) / ath_price) * 100
-            st.metric(
-                label="Price",
-                value=f"${price:,.8f}",
-                delta=f"{price_from_ath:.1f}% from ATH",
-                delta_color="normal" if price_from_ath >= 0 else "inverse",
-                help=f"Current price (ATH: ${ath_price:,.8f})",
-            )
+            col1, col2, col3 = st.columns([1, 4, 1])
+            with col2:
+                st.metric(
+                    label="Current Price",
+                    value=f"${price:,.8f}",
+                    delta=f"{price_from_ath:.1f}% from ATH",
+                    delta_color="normal" if price_from_ath >= 0 else "inverse",
+                    help=f"Current price (ATH: ${ath_price:,.8f})",
+                )
 
             # Additional info row
             if token.get("market_cap_rank"):
