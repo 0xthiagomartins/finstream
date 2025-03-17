@@ -6,6 +6,7 @@ FinStream is a simple and interactive personal finance dashboard built with Stre
 ![image](./assets/budget_demo.png)
 ![image](./assets/first_million_demo.png)
 ![image](./assets/net_worth_demo.png)
+![image](./assets/market_cap_of_demo.png)
 
 ## Features
 - **Budget Tracker**: Log income and expenses, visualize spending trends.
