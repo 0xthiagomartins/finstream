@@ -133,41 +133,94 @@ def display_token_info(token: dict, token_data: dict = None):
         return
 
     with st.container(border=True):
-
         if token_data:
+            # Get current and ATH values
             price = token_data["market_data"]["current_price"]["usd"]
             mcap = token_data["market_data"]["market_cap"]["usd"]
-            col1, col2 = st.columns([2, 3])
-
+            ath_price = token_data["market_data"]["ath"]["usd"]
+            ath_date = token_data["market_data"]["ath_date"]["usd"].split("T")[0]
+            supply = token_data["market_data"]["circulating_supply"]
+            ath_mcap = ath_price * supply
+            
+            # Main token info row
+            col1, col2 = st.columns([1, 4])
+            
             with col1:
                 if token.get("large"):
-                    st.image(token["large"], width=64, use_container_width="never")
-                # Market cap metric with custom formatting
-                st.metric(
-                    label="Market Cap",
-                    value=format_large_number(mcap),
-                    help="Total market capitalization",
-                )
-
+                    st.image(token["large"], width=64)
+            
             with col2:
+                # Token name and symbol with custom styling
                 st.markdown(
                     f"""
-                    <h3 style='margin-bottom: 0.5rem;'>
-                        {token['name']} 
-                        <span style='color: #666;'>({token['symbol'].upper()})</span>
-                    </h3>
+                    <div style='margin-bottom: 0.5rem;'>
+                        <h3 style='margin: 0; color: #FFFFFF;'>
+                            {token['name']}
+                            <span style='color: #666666; font-size: 0.9em;'>
+                                ({token['symbol'].upper()})
+                            </span>
+                        </h3>
+                    </div>
                     """,
                     unsafe_allow_html=True,
                 )
-                # Price metric with custom formatting
+
+            # Market caps row
+            col1, col2 = st.columns(2)
+            
+            with col1:
                 st.metric(
-                    label="Price",
-                    value=f"${price:,.8f}",
-                    help="Current token price in USD",
+                    label="Current Market Cap",
+                    value=format_large_number(mcap),
+                    help="Current total market capitalization",
+                )
+
+            with col2:
+                st.metric(
+                    label=f"ATH Market Cap ({ath_date})",
+                    value=format_large_number(ath_mcap),
+                    help="All-Time High market capitalization",
+                )
+
+            # Price row
+            price_from_ath = ((price - ath_price) / ath_price) * 100
+            st.metric(
+                label="Price",
+                value=f"${price:,.8f}",
+                delta=f"{price_from_ath:.1f}% from ATH",
+                delta_color="normal" if price_from_ath >= 0 else "inverse",
+                help=f"Current price (ATH: ${ath_price:,.8f})",
+            )
+
+            # Additional info row
+            if token.get("market_cap_rank"):
+                st.markdown(
+                    f"""
+                    <div style='font-size: 0.85em; color: #666666; margin-bottom: 0.5rem;'>
+                        🏆 Rank #{token['market_cap_rank']} • 
+                        Volume: {format_large_number(token_data['market_data']['total_volume']['usd'])} • 
+                        Supply: {format_large_number(supply).replace('$', '')}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
                 )
 
         elif token.get("market_cap_rank"):
-            st.caption(f"🏆 Rank #{token['market_cap_rank']}")
+            # Simplified view when only basic token data is available
+            st.markdown(
+                f"""
+                <div style='display: flex; align-items: center;'>
+                    <h3 style='margin: 0;'>{token['name']}</h3>
+                    <span style='color: #666666; margin-left: 0.5rem;'>
+                        ({token['symbol'].upper()})
+                    </span>
+                </div>
+                <div style='color: #666666; margin-top: 0.25rem;'>
+                    🏆 Rank #{token['market_cap_rank']}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 
 def display_comparison(
@@ -253,7 +306,7 @@ def display_comparison(
             st.markdown(
                 f"""
                 <div style='text-align: center; padding: 0.5rem; margin-bottom: 1rem;'>
-                    <p style='font-size: 2rem; margin: 0;'>
+                    <p style='font-size: 1.8rem; margin: 0;'>
                         <b style='color: #ce7e00;'>{token1['symbol'].upper()}</b> is 
                         <span style='color: {"#ea2829" if not is_under else "#09ab3b"};'>
                             {format_large_number(mcap_difference)} 
@@ -297,18 +350,51 @@ def render_marketcap_dashboard():
         token2, token2_data = create_token_search("second token", "token2")
 
     if (token1 and isinstance(token1, dict)) and (token2 and isinstance(token2, dict)):
-        col1, col2, col3 = st.columns([4, 1, 4])
+        col1, col2, col3 = st.columns([10, 1, 10])
 
         with col1:
             display_token_info(token1, token1_data)
-            # Update main session state
             st.session_state.token1 = token1
             st.session_state.token1_data = token1_data
 
         with col2:
-            st.markdown("---")
-            if st.button("🔄 Invert Comparison", use_container_width=True):
-                # Swap main tokens
+            # Center the swap button vertically with custom styling
+            st.markdown(
+                """
+                <style>
+                    div[data-testid="column"]:nth-of-type(2) {
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        min-height: 200px;
+                    }
+                    
+                    div[data-testid="column"]:nth-of-type(2) button {
+                        background: none;
+                        border: none;
+                        border-radius: 50%;
+                        width: 48px !important;
+                        height: 48px;
+                        padding: 12px;
+                        transition: all 0.2s ease;
+                    }
+                    
+                    div[data-testid="column"]:nth-of-type(2) button:hover {
+                        background: rgba(206, 126, 0, 0.1);
+                    }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                "<div style='text-align: center; padding-bottom: 10rem;'></div>",
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "⇄",  # Unicode swap arrow
+                help="Swap tokens",
+                use_container_width=True,
+            ):
                 (
                     st.session_state.token1,
                     st.session_state.token2,
@@ -316,7 +402,7 @@ def render_marketcap_dashboard():
                     st.session_state.token2,
                     st.session_state.token1,
                 )
-
+                
                 # Swap token data
                 (
                     st.session_state.token1_data,
@@ -361,10 +447,9 @@ def render_marketcap_dashboard():
                     st.session_state["search_query_token1"],
                 )
                 st.rerun()
-            st.markdown("---")
+
         with col3:
             display_token_info(token2, token2_data)
-            # Update main session state
             st.session_state.token2 = token2
             st.session_state.token2_data = token2_data
 
