@@ -137,16 +137,16 @@ def display_token_info(token: dict, token_data: dict = None):
         if token_data:
             price = token_data["market_data"]["current_price"]["usd"]
             mcap = token_data["market_data"]["market_cap"]["usd"]
-            col1, col2 = st.columns([1, 1])
+            col1, col2 = st.columns([2, 3])
 
             with col1:
                 if token.get("large"):
                     st.image(token["large"], width=64, use_container_width="never")
-                # Price metric with custom formatting
+                # Market cap metric with custom formatting
                 st.metric(
-                    label="Price",
-                    value=f"${price:,.8f}",
-                    help="Current token price in USD",
+                    label="Market Cap",
+                    value=format_large_number(mcap),
+                    help="Total market capitalization",
                 )
 
             with col2:
@@ -159,11 +159,11 @@ def display_token_info(token: dict, token_data: dict = None):
                     """,
                     unsafe_allow_html=True,
                 )
-                # Market cap metric with custom formatting
+                # Price metric with custom formatting
                 st.metric(
-                    label="Market Cap",
-                    value=format_large_number(mcap),
-                    help="Total market capitalization",
+                    label="Price",
+                    value=f"${price:,.8f}",
+                    help="Current token price in USD",
                 )
 
         elif token.get("market_cap_rank"):
@@ -297,7 +297,7 @@ def render_marketcap_dashboard():
         token2, token2_data = create_token_search("second token", "token2")
 
     if (token1 and isinstance(token1, dict)) and (token2 and isinstance(token2, dict)):
-        col1, col2, col3 = st.columns([3, 1, 3])
+        col1, col2, col3 = st.columns([4, 1, 4])
 
         with col1:
             display_token_info(token1, token1_data)
