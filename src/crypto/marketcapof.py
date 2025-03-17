@@ -187,16 +187,26 @@ def display_comparison(
             ),
         )
 
+    # Calculate values for comparison message
+    current_mcap = token1_data["market_data"]["market_cap"]["usd"]
+    if use_ath:
+        target_mcap = (
+            token2_data["market_data"]["ath"]["usd"]
+            * token2_data["market_data"]["circulating_supply"]
+        )
+    else:
+        target_mcap = token2_data["market_data"]["market_cap"]["usd"]
+
     # Center title with token names
-    title_suffix = "ATH Market Cap" if use_ath else "Current Market Cap"
+    title_suffix = "ATH Market Cap of" if use_ath else "Market Cap of"
     st.markdown(
         f"""
         <div style='text-align: center; padding: 1rem;'>
             <h2>
                 <b style='color: #ce7e00;'>${token1['symbol'].upper()}</b> 
                 With 
-                <b style='color: #ce7e00;'>${token2['symbol'].upper()}'s</b> 
                 {title_suffix}
+                <b style='color: #ce7e00;'>${token2['symbol'].upper()}</b> 
             </h2>
             <p style='color: #666; margin-top: 0.5rem;'>
                 {
@@ -236,61 +246,25 @@ def display_comparison(
                     delta=f"{price_multiplier:.2f}x",
                     delta_color="normal" if price_multiplier > 1 else "inverse",
                 )
+            mcap_difference = abs(target_mcap - current_mcap)
+            is_under = current_mcap < target_mcap
 
-    # Additional market cap details in a container below
-    with st.container(border=True):
-        col1, col2, col3 = st.columns(3)
-
-        # Current market cap
-        with col1:
-            st.metric(
-                label=f"{token1['symbol'].upper()} Market Cap",
-                value=format_large_number(
-                    token1_data["market_data"]["market_cap"]["usd"]
-                ),
-                help="Current market capitalization",
-            )
-
-        # Arrow and multiplier
-        with col2:
-            if use_ath:
-                ath_price = token2_data["market_data"]["ath"]["usd"]
-                current_supply = token2_data["market_data"]["circulating_supply"]
-                target_mcap = ath_price * current_supply
-            else:
-                target_mcap = token2_data["market_data"]["market_cap"]["usd"]
-
-            mcap_ratio = target_mcap / token1_data["market_data"]["market_cap"]["usd"]
-
+            # Add comparative message
             st.markdown(
                 f"""
-                <div style='text-align: center; font-size: 2rem; margin: 1rem 0;'>
-                    ⟶
+                <div style='text-align: center; padding: 0.5rem; margin-bottom: 1rem;'>
+                    <p style='font-size: 2rem; margin: 0;'>
+                        <b style='color: #ce7e00;'>{token1['symbol'].upper()}</b> is 
+                        <span style='color: {"#ea2829" if not is_under else "#09ab3b"};'>
+                            {format_large_number(mcap_difference)} 
+                            {"under" if is_under else "above"}
+                        </span> 
+                        <b style='color: #ce7e00;'>{token2['symbol'].upper()}</b>
+                    </p>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-            st.metric(
-                label="Market Cap Difference",
-                value=f"{mcap_ratio:.2f}x",
-                help=f"How many times larger {token2['symbol'].upper()}'s {'ATH' if use_ath else 'current'} market cap is",
-            )
-
-        # Target market cap
-        with col3:
-            if use_ath:
-                ath_date = token2_data["market_data"]["ath_date"]["usd"].split("T")[0]
-                st.metric(
-                    label=f"{token2['symbol'].upper()} ATH Market Cap",
-                    value=format_large_number(target_mcap),
-                    help=f"All-Time High market cap (reached on {ath_date})",
-                )
-            else:
-                st.metric(
-                    label=f"{token2['symbol'].upper()} Market Cap",
-                    value=format_large_number(target_mcap),
-                    help="Current market capitalization",
-                )
 
 
 def render_marketcap_dashboard():

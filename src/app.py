@@ -34,7 +34,7 @@ net_worth_page = st.Page(
 
 marketcap_of_page = st.Page(
     render_marketcap_dashboard,
-    title="Marketcap Of",
+    title="Market Cap Of",
     icon=":material/currency_bitcoin:",
 )
 
