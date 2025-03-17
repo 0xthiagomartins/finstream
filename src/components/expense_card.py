@@ -18,11 +18,11 @@ def render_expense_card(
             (total_spent / budget_amount * 100) if budget_amount > 0 else 0
         )
 
-        header_col1, header_col2 = st.columns([2, 2])
+        header_col1, header_col2 = st.columns([10, 9])
         with header_col1:
-            st.subheader(category)
+            st.markdown(f"#### {category}")
         with header_col2:
-            st.subheader(rf"{total_spent:.2f} / {budget_amount:.2f}")
+            st.markdown(f"#### {total_spent:.2f}/{budget_amount:.2f}")
 
         # Progress bar for budget usage
         st.progress(min(percentage_used / 100, 1.0))
@@ -39,7 +39,7 @@ def render_expense_card(
                 "Expense": st.column_config.TextColumn(
                     "Description",
                     help="Description of the expense",
-                    width="large",
+                    width="medium",
                     required=True,
                 ),
                 "Amount": st.column_config.NumberColumn(
