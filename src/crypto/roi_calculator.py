@@ -5,6 +5,7 @@ from streamlit_extras.metric_cards import style_metric_cards
 from streamlit_extras.switch_page_button import switch_page
 from streamlit_extras.add_vertical_space import add_vertical_space
 from .marketcapof import create_token_search, display_token_info
+import plotly.graph_objects as go
 
 
 def format_roi(value: float, as_percentage: bool = False) -> str:
@@ -24,8 +25,8 @@ def format_roi(value: float, as_percentage: bool = False) -> str:
 
 def calculate_roi(
     token_data: dict, start_date: datetime, end_date: datetime
-) -> tuple[float, float, float]:
-    """Calculate ROI between two dates."""
+) -> tuple[float, float, float, list, list]:
+    """Calculate ROI between two dates and return price history."""
     # Get historical data
     coingecko = CoinGeckoAPI()
     history = coingecko.get_market_chart(
@@ -34,8 +35,12 @@ def calculate_roi(
         days=(end_date - start_date).days,
     )
 
-    # Find closest prices to our dates
+    # Process all prices for the chart
     prices = history["prices"]
+    dates = [datetime.fromtimestamp(price[0] / 1000) for price in prices]
+    values = [price[1] for price in prices]
+
+    # Find closest prices to our dates for ROI calculation
     start_price = next(
         price[1]
         for price in prices
@@ -48,7 +53,7 @@ def calculate_roi(
     )
 
     roi = end_price / start_price
-    return roi, start_price, end_price
+    return roi, start_price, end_price, dates, values
 
 
 def render_roi_calculator():
@@ -127,12 +132,104 @@ def render_roi_calculator():
         end_datetime = datetime.combine(end_date, datetime.max.time())
 
         try:
-            roi1, price1_start, price1_end = calculate_roi(
+            # Get ROI and price history for both tokens
+            roi1, price1_start, price1_end, dates1, values1 = calculate_roi(
                 token1_data, start_datetime, end_datetime
             )
-            roi2, price2_start, price2_end = calculate_roi(
+            roi2, price2_start, price2_end, dates2, values2 = calculate_roi(
                 token2_data, start_datetime, end_datetime
             )
+
+            # Create price evolution chart
+            st.markdown("### Price Evolution")
+
+            # Normalize values to show relative change (start at 100%)
+            norm_values1 = [v / price1_start * 100 for v in values1]
+            norm_values2 = [v / price2_start * 100 for v in values2]
+
+            fig_evolution = go.Figure()
+
+            # Define distinct colors for each token
+            token1_color = "#ce7e00"  # Orange for token1
+            token2_color = "#1f77b4"  # Blue for token2
+
+            # Add lines for both tokens
+            fig_evolution.add_trace(
+                go.Scatter(
+                    x=dates1,
+                    y=norm_values1,
+                    name=f"{token1['symbol'].upper()}",
+                    line=dict(
+                        color=token1_color,
+                        width=2,
+                    ),
+                    hovertemplate=(
+                        f"{token1['symbol'].upper()}<br>"
+                        "Date: %{x|%Y-%m-%d}<br>"
+                        "Change: %{y:.2f}%<br>"
+                        "<extra></extra>"
+                    ),
+                )
+            )
+
+            fig_evolution.add_trace(
+                go.Scatter(
+                    x=dates2,
+                    y=norm_values2,
+                    name=f"{token2['symbol'].upper()}",
+                    line=dict(
+                        color=token2_color,
+                        width=2,
+                    ),
+                    hovertemplate=(
+                        f"{token2['symbol'].upper()}<br>"
+                        "Date: %{x|%Y-%m-%d}<br>"
+                        "Change: %{y:.2f}%<br>"
+                        "<extra></extra>"
+                    ),
+                )
+            )
+
+            # Add reference line at 100%
+            fig_evolution.add_hline(
+                y=100,
+                line_dash="dash",
+                line_color="#666666",
+                annotation_text="Initial Value (100%)",
+                annotation_position="right",
+            )
+
+            # Update layout
+            fig_evolution.update_layout(
+                title="Relative Price Evolution (Starting at 100%)",
+                yaxis_title="Price Change (%)",
+                plot_bgcolor="#0E1117",
+                paper_bgcolor="#0E1117",
+                font=dict(color="#FFFFFF"),
+                showlegend=True,
+                legend=dict(
+                    yanchor="top",
+                    y=0.99,
+                    xanchor="left",
+                    x=0.01,
+                    bgcolor="rgba(0,0,0,0)",
+                ),
+                hovermode="x unified",
+                yaxis=dict(
+                    gridcolor="#2e3026",
+                    tickformat=".0f",
+                    ticksuffix="%",
+                    zeroline=False,
+                ),
+                xaxis=dict(
+                    gridcolor="#2e3026",
+                    type="date",
+                ),
+                margin=dict(t=30, r=10, b=10, l=10),
+            )
+
+            # Show the chart
+            st.plotly_chart(fig_evolution, use_container_width=True)
 
             # Display ROI comparison
             st.markdown("### ROI Comparison")
@@ -266,34 +363,125 @@ def render_roi_calculator():
 
             # Investment simulation
             st.markdown("### Compare ROI for a specific amount")
-            investment_amount = st.number_input(
-                "Investment Amount ($)",
-                min_value=1.0,
-                value=1000.0,
-                step=100.0,
-                format="%.2f",
-            )
 
-            col1, col2 = st.columns(2)
-            with col1:
-                token1_return = investment_amount * roi1
-                profit1 = token1_return - investment_amount
-                st.metric(
-                    f'{token1["symbol"].upper()} Return',
-                    f"${token1_return:,.2f}",
-                    delta=f'{"Profit" if profit1 >= 0 else "Loss"}: ${abs(profit1):,.2f}',
-                    delta_color=f"{'normal' if profit1 >= 0 else 'inverse'}",
+            # Create two columns for layout
+            left_col, right_col = st.columns([3, 5])
+
+            with left_col:
+                st.markdown(
+                    '<div style="padding-bottom: 2rem;"></div>', unsafe_allow_html=True
+                )
+                investment_amount = st.number_input(
+                    "Investment Amount ($)",
+                    min_value=1.0,
+                    value=1000.0,
+                    step=100.0,
+                    format="%.2f",
+                )
+                st.markdown(
+                    '<div style="padding-bottom: 4rem;"></div>', unsafe_allow_html=True
                 )
 
-            with col2:
-                token2_return = investment_amount * roi2
-                profit2 = token2_return - investment_amount
-                st.metric(
-                    f'{token2["symbol"].upper()} Return',
-                    f"${token2_return:,.2f}",
-                    delta=f'{"Profit" if profit2 >= 0 else "Loss"}: ${abs(profit2):,.2f}',
-                    delta_color=f"{'normal' if profit2 >= 0 else 'inverse'}",
+                col1, col2 = st.columns(2)
+                with col1:
+                    token1_return = investment_amount * roi1
+                    profit1 = token1_return - investment_amount
+                    st.metric(
+                        f'{token1["symbol"].upper()} Return',
+                        f"${token1_return:,.2f}",
+                        delta=f"{profit1:,.2f}",
+                        delta_color=f"normal",
+                    )
+
+                with col2:
+                    token2_return = investment_amount * roi2
+                    profit2 = token2_return - investment_amount
+                    st.metric(
+                        f'{token2["symbol"].upper()} Return',
+                        f"${token2_return:,.2f}",
+                        delta=f"{profit2:,.2f}",
+                        delta_color=f"normal",
+                    )
+
+            with right_col:
+                # Create comparison plot
+                fig = go.Figure()
+
+                # Add lines for both tokens with actual amounts
+                fig.add_trace(
+                    go.Scatter(
+                        x=dates1,
+                        y=[v * (investment_amount / price1_start) for v in values1],
+                        name=f"{token1['symbol'].upper()}",
+                        line=dict(
+                            color=token1_color,
+                            width=2,
+                        ),
+                        hovertemplate=(
+                            f"{token1['symbol'].upper()}<br>"
+                            "Date: %{x|%Y-%m-%d}<br>"
+                            "Value: $%{y:,.2f}<br>"
+                            "<extra></extra>"
+                        ),
+                    )
                 )
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=dates2,
+                        y=[v * (investment_amount / price2_start) for v in values2],
+                        name=f"{token2['symbol'].upper()}",
+                        line=dict(
+                            color=token2_color,
+                            width=2,
+                        ),
+                        hovertemplate=(
+                            f"{token2['symbol'].upper()}<br>"
+                            "Date: %{x|%Y-%m-%d}<br>"
+                            "Value: $%{y:,.2f}<br>"
+                            "<extra></extra>"
+                        ),
+                    )
+                )
+
+                # Add reference line at initial investment
+                fig.add_hline(
+                    y=investment_amount,
+                    line_dash="dash",
+                    line_color="#666666",
+                    annotation_text="Initial Investment",
+                    annotation_position="right",
+                )
+
+                # Update layout
+                fig.update_layout(
+                    title="Investment Value Over Time",
+                    yaxis_title="Value ($)",
+                    plot_bgcolor="#0E1117",
+                    paper_bgcolor="#0E1117",
+                    font=dict(color="#FFFFFF"),
+                    showlegend=True,
+                    legend=dict(
+                        yanchor="top",
+                        y=0.99,
+                        xanchor="left",
+                        x=0.01,
+                        bgcolor="rgba(0,0,0,0)",
+                    ),
+                    hovermode="x unified",
+                    yaxis=dict(
+                        gridcolor="#2e3026",
+                        tickformat="$,.0f",
+                        zeroline=False,
+                    ),
+                    xaxis=dict(
+                        gridcolor="#2e3026",
+                        type="date",
+                    ),
+                    margin=dict(t=30, r=10, b=10, l=10),
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
 
             # Winner announcement
             st.markdown("### Result")
