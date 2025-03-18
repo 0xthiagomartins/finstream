@@ -6,6 +6,7 @@ from streamlit_extras.switch_page_button import switch_page
 from streamlit_extras.add_vertical_space import add_vertical_space
 from .marketcapof import create_token_search, display_token_info
 import plotly.graph_objects as go
+from components.icons import Icons
 
 
 def format_roi(value: float, as_percentage: bool = False) -> str:
@@ -140,96 +141,8 @@ def render_roi_calculator():
                 token2_data, start_datetime, end_datetime
             )
 
-            # Create price evolution chart
-            st.markdown("### Price Evolution")
-
-            # Normalize values to show relative change (start at 100%)
-            norm_values1 = [v / price1_start * 100 for v in values1]
-            norm_values2 = [v / price2_start * 100 for v in values2]
-
-            fig_evolution = go.Figure()
-
-            # Define distinct colors for each token
             token1_color = "#ce7e00"  # Orange for token1
             token2_color = "#1f77b4"  # Blue for token2
-
-            # Add lines for both tokens
-            fig_evolution.add_trace(
-                go.Scatter(
-                    x=dates1,
-                    y=norm_values1,
-                    name=f"{token1['symbol'].upper()}",
-                    line=dict(
-                        color=token1_color,
-                        width=2,
-                    ),
-                    hovertemplate=(
-                        f"{token1['symbol'].upper()}<br>"
-                        "Date: %{x|%Y-%m-%d}<br>"
-                        "Change: %{y:.2f}%<br>"
-                        "<extra></extra>"
-                    ),
-                )
-            )
-
-            fig_evolution.add_trace(
-                go.Scatter(
-                    x=dates2,
-                    y=norm_values2,
-                    name=f"{token2['symbol'].upper()}",
-                    line=dict(
-                        color=token2_color,
-                        width=2,
-                    ),
-                    hovertemplate=(
-                        f"{token2['symbol'].upper()}<br>"
-                        "Date: %{x|%Y-%m-%d}<br>"
-                        "Change: %{y:.2f}%<br>"
-                        "<extra></extra>"
-                    ),
-                )
-            )
-
-            # Add reference line at 100%
-            fig_evolution.add_hline(
-                y=100,
-                line_dash="dash",
-                line_color="#666666",
-                annotation_text="Initial Value (100%)",
-                annotation_position="right",
-            )
-
-            # Update layout
-            fig_evolution.update_layout(
-                title="Relative Price Evolution (Starting at 100%)",
-                yaxis_title="Price Change (%)",
-                plot_bgcolor="#0E1117",
-                paper_bgcolor="#0E1117",
-                font=dict(color="#FFFFFF"),
-                showlegend=True,
-                legend=dict(
-                    yanchor="top",
-                    y=0.99,
-                    xanchor="left",
-                    x=0.01,
-                    bgcolor="rgba(0,0,0,0)",
-                ),
-                hovermode="x unified",
-                yaxis=dict(
-                    gridcolor="#2e3026",
-                    tickformat=".0f",
-                    ticksuffix="%",
-                    zeroline=False,
-                ),
-                xaxis=dict(
-                    gridcolor="#2e3026",
-                    type="date",
-                ),
-                margin=dict(t=30, r=10, b=10, l=10),
-            )
-
-            # Show the chart
-            st.plotly_chart(fig_evolution, use_container_width=True)
 
             # Display ROI comparison
             st.markdown("### ROI Comparison")
@@ -272,9 +185,18 @@ def render_roi_calculator():
                         opacity: 0.8;
                     }
                     .chart-icon {
-                        width: 40px;
-                        height: 40px;
+                        width: 100px;
+                        height: 100px;
                         margin-left: 1rem;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .icon-grow {
+                        fill: #09ab3b;
+                    }
+                    .icon-decline {
+                        fill: #ea2829;
                     }
                     .green { color: #09ab3b; }
                     .red { color: #ea2829; }
@@ -286,6 +208,7 @@ def render_roi_calculator():
                 unsafe_allow_html=True,
             )
 
+            # Display ROI comparison cards
             col1, col2 = st.columns(2)
 
             with col1:
@@ -313,9 +236,7 @@ def render_roi_calculator():
                             </div>
                         </div>
                         <div class="chart-icon">
-                            {'📈' if roi1 >= 1 else '📉'}
-                        </div>
-                    </div>
+                            {Icons.TREND_UP if roi1 >= 1 else Icons.TREND_DOWN}
                     """,
                     unsafe_allow_html=True,
                 )
@@ -345,9 +266,7 @@ def render_roi_calculator():
                             </div>
                         </div>
                         <div class="chart-icon">
-                            {'📈' if roi2 >= 1 else '📉'}
-                        </div>
-                    </div>
+                            {Icons.TREND_UP if roi2 >= 1 else Icons.TREND_DOWN}
                     """,
                     unsafe_allow_html=True,
                 )
