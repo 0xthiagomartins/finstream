@@ -278,37 +278,21 @@ def render_roi_calculator():
             with col1:
                 token1_return = investment_amount * roi1
                 profit1 = token1_return - investment_amount
-                st.markdown(
-                    f"""
-                    <div style="padding: 1rem; border-radius: 0.5rem; background: {'rgba(9, 171, 59, 0.1)' if profit1 >= 0 else 'rgba(234, 40, 41, 0.1)'}">
-                        <h4 style="margin: 0">{token1['symbol'].upper()} Return</h4>
-                        <p style="font-size: 1.5rem; margin: 0.5rem 0">
-                            ${token1_return:,.2f}
-                        </p>
-                        <p style="margin: 0; opacity: 0.8; color: {'#09ab3b' if profit1 >= 0 else '#ea2829'}">
-                            {"Profit" if profit1 >= 0 else "Loss"}: ${abs(profit1):,.2f}
-                        </p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
+                st.metric(
+                    f'{token1["symbol"].upper()} Return',
+                    f"${token1_return:,.2f}",
+                    delta=f'{"Profit" if profit1 >= 0 else "Loss"}: ${abs(profit1):,.2f}',
+                    delta_color=f"{'normal' if profit1 >= 0 else 'inverse'}",
                 )
 
             with col2:
                 token2_return = investment_amount * roi2
                 profit2 = token2_return - investment_amount
-                st.markdown(
-                    f"""
-                    <div style="padding: 1rem; border-radius: 0.5rem; background: {'rgba(9, 171, 59, 0.1)' if profit2 >= 0 else 'rgba(234, 40, 41, 0.1)'}">
-                        <h4 style="margin: 0">{token2['symbol'].upper()} Return</h4>
-                        <p style="font-size: 1.5rem; margin: 0.5rem 0">
-                            ${token2_return:,.2f}
-                        </p>
-                        <p style="margin: 0; opacity: 0.8; color: {'#09ab3b' if profit2 >= 0 else '#ea2829'}">
-                            {"Profit" if profit2 >= 0 else "Loss"}: ${abs(profit2):,.2f}
-                        </p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
+                st.metric(
+                    f'{token2["symbol"].upper()} Return',
+                    f"${token2_return:,.2f}",
+                    delta=f'{"Profit" if profit2 >= 0 else "Loss"}: ${abs(profit2):,.2f}',
+                    delta_color=f"{'normal' if profit2 >= 0 else 'inverse'}",
                 )
 
             # Winner announcement
