@@ -2,7 +2,7 @@ import streamlit as st
 from budget import render_budget_dashboard, render_budget_goals_page
 from first_million import render_first_million
 from net_worth import render_net_worth
-from crypto import render_marketcap_dashboard
+from crypto import render_marketcap_dashboard, render_roi_calculator
 from streamlit_extras.metric_cards import style_metric_cards
 
 
@@ -38,12 +38,18 @@ marketcap_of_page = st.Page(
     icon=":material/currency_bitcoin:",
 )
 
+roi_calculator_page = st.Page(
+    render_roi_calculator,
+    title="ROI Calculator",
+    icon=":material/trending_up:",
+)
+
 # Define navigation structure
 pg = st.navigation(
     {
         "Budget Management": [goals_page, dashboard_page],
         "Financial Planning": [first_million_page, net_worth_page],
-        "Crypto": [marketcap_of_page],
+        "Crypto": [marketcap_of_page, roi_calculator_page],
     }
 )
 

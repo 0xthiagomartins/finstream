@@ -43,5 +43,10 @@ class CoinGeckoAPI:
     ) -> dict:
         """Get market chart data for a coin."""
         return self._make_request(
-            f"coins/{coin_id}/market_chart", {"vs_currency": vs_currency, "days": days}
+            f"coins/{coin_id}/market_chart",
+            {
+                "vs_currency": vs_currency,
+                "days": days,
+                "interval": "daily" if days > 90 else "hourly",
+            },
         )
