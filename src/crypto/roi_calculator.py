@@ -8,10 +8,18 @@ from .marketcapof import create_token_search, display_token_info
 
 
 def format_roi(value: float, as_percentage: bool = False) -> str:
-    """Format ROI value as multiplier or percentage."""
+    """Format ROI value as multiplier or percentage with color indication."""
+    is_positive = value >= 1
     if as_percentage:
-        return f"{(value - 1) * 100:,.2f}%"
-    return f"{value:,.2f}x"
+        percentage = (value - 1) * 100
+        formatted = f"{percentage:,.2f}%"
+    else:
+        formatted = f"{value:,.2f}x"
+
+    color = (
+        "#09ab3b" if is_positive else "#ea2829"
+    )  # Green for positive, red for negative
+    return f'<span style="color: {color}">{formatted}</span>'
 
 
 def calculate_roi(
@@ -129,30 +137,132 @@ def render_roi_calculator():
             # Display ROI comparison
             st.markdown("### ROI Comparison")
 
-            col1, col2, col3 = st.columns([2, 1, 2])
+            # Custom CSS for the comparison cards
+            st.markdown(
+                """
+                <style>
+                    .comparison-card {
+                        display: flex;
+                        align-items: center;
+                        padding: 1.5rem;
+                        border-radius: 1rem;
+                        background: rgba(17, 17, 17, 0.3);
+                        margin-bottom: 1rem;
+                    }
+                    .icon-wrapper {
+                        width: 80px;
+                        height: 80px;
+                        margin-right: 1.5rem;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: rgba(255, 255, 255, 0.1);
+                        border-radius: 50%;
+                    }
+                    .details {
+                        flex-grow: 1;
+                    }
+                    .title {
+                        font-size: 1.25rem;
+                        margin-bottom: 0.5rem;
+                    }
+                    .percentage {
+                        font-size: 1.1rem;
+                        margin-bottom: 0.25rem;
+                    }
+                    .period {
+                        font-size: 0.9rem;
+                        opacity: 0.8;
+                    }
+                    .chart-icon {
+                        width: 40px;
+                        height: 40px;
+                        margin-left: 1rem;
+                    }
+                    .green { color: #09ab3b; }
+                    .red { color: #ea2829; }
+                    .underlined {
+                        border-bottom: 2px dotted rgba(255, 255, 255, 0.2);
+                    }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            col1, col2 = st.columns(2)
 
             with col1:
-                st.metric(
-                    f"{token1['symbol'].upper()} ROI",
-                    format_roi(roi1, st.session_state.show_as_percentage),
-                    f"${price1_start:.8f} → ${price1_end:.8f}",
-                    delta_color="normal" if roi1 >= 1 else "inverse",
+                st.markdown(
+                    f"""
+                    <div class="comparison-card">
+                        <div class="icon-wrapper">
+                            <img src="{token1.get('large', '')}" alt="{token1['symbol']}" width="60">
+                        </div>
+                        <div class="details">
+                            <div class="title">
+                                {token1['name']} <strong>({token1['symbol'].upper()})</strong>
+                            </div>
+                            <div class="percentage">
+                                had {'an' if roi1 >= 1 else 'a'} 
+                                <strong class="underlined">
+                                    {'increase' if roi1 >= 1 else 'decrease'}
+                                </strong> of 
+                                <strong class="{'green' if roi1 >= 1 else 'red'}">
+                                    {format_roi(roi1, st.session_state.show_as_percentage)}
+                                </strong>
+                            </div>
+                            <div class="period">
+                                from {start_date.strftime('%b. %d, %Y')} - {end_date.strftime('%b. %d, %Y')}
+                            </div>
+                        </div>
+                        <div class="chart-icon">
+                            {'📈' if roi1 >= 1 else '📉'}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
                 )
 
             with col2:
-                if st.button("⇄ Toggle %/×"):
+                st.markdown(
+                    f"""
+                    <div class="comparison-card">
+                        <div class="icon-wrapper">
+                            <img src="{token2.get('large', '')}" alt="{token2['symbol']}" width="60">
+                        </div>
+                        <div class="details">
+                            <div class="title">
+                                {token2['name']} <strong>({token2['symbol'].upper()})</strong>
+                            </div>
+                            <div class="percentage">
+                                had {'an' if roi2 >= 1 else 'a'} 
+                                <strong class="underlined">
+                                    {'increase' if roi2 >= 1 else 'decrease'}
+                                </strong> of 
+                                <strong class="{'green' if roi2 >= 1 else 'red'}">
+                                    {format_roi(roi2, st.session_state.show_as_percentage)}
+                                </strong>
+                            </div>
+                            <div class="period">
+                                from {start_date.strftime('%b. %d, %Y')} - {end_date.strftime('%b. %d, %Y')}
+                            </div>
+                        </div>
+                        <div class="chart-icon">
+                            {'📈' if roi2 >= 1 else '📉'}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            # Toggle button centered
+            col1, col2, col3 = st.columns([2, 1, 2])
+            with col2:
+                if st.button("⇄ Toggle %/×", use_container_width=True):
                     st.session_state.show_as_percentage = (
                         not st.session_state.show_as_percentage
                     )
                     st.rerun()
-
-            with col3:
-                st.metric(
-                    f"{token2['symbol'].upper()} ROI",
-                    format_roi(roi2, st.session_state.show_as_percentage),
-                    f"${price2_start:.8f} → ${price2_end:.8f}",
-                    delta_color="normal" if roi2 >= 1 else "inverse",
-                )
 
             # Investment simulation
             st.markdown("### Compare ROI for a specific amount")
@@ -167,37 +277,56 @@ def render_roi_calculator():
             col1, col2 = st.columns(2)
             with col1:
                 token1_return = investment_amount * roi1
-                st.metric(
-                    f"{token1['symbol'].upper()} Return",
-                    f"${token1_return:,.2f}",
-                    f"${token1_return - investment_amount:,.2f}",
-                    delta_color=(
-                        "normal" if token1_return >= investment_amount else "inverse"
-                    ),
+                profit1 = token1_return - investment_amount
+                st.markdown(
+                    f"""
+                    <div style="padding: 1rem; border-radius: 0.5rem; background: {'rgba(9, 171, 59, 0.1)' if profit1 >= 0 else 'rgba(234, 40, 41, 0.1)'}">
+                        <h4 style="margin: 0">{token1['symbol'].upper()} Return</h4>
+                        <p style="font-size: 1.5rem; margin: 0.5rem 0">
+                            ${token1_return:,.2f}
+                        </p>
+                        <p style="margin: 0; opacity: 0.8; color: {'#09ab3b' if profit1 >= 0 else '#ea2829'}">
+                            {"Profit" if profit1 >= 0 else "Loss"}: ${abs(profit1):,.2f}
+                        </p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
                 )
 
             with col2:
                 token2_return = investment_amount * roi2
-                st.metric(
-                    f"{token2['symbol'].upper()} Return",
-                    f"${token2_return:,.2f}",
-                    f"${token2_return - investment_amount:,.2f}",
-                    delta_color=(
-                        "normal" if token2_return >= investment_amount else "inverse"
-                    ),
+                profit2 = token2_return - investment_amount
+                st.markdown(
+                    f"""
+                    <div style="padding: 1rem; border-radius: 0.5rem; background: {'rgba(9, 171, 59, 0.1)' if profit2 >= 0 else 'rgba(234, 40, 41, 0.1)'}">
+                        <h4 style="margin: 0">{token2['symbol'].upper()} Return</h4>
+                        <p style="font-size: 1.5rem; margin: 0.5rem 0">
+                            ${token2_return:,.2f}
+                        </p>
+                        <p style="margin: 0; opacity: 0.8; color: {'#09ab3b' if profit2 >= 0 else '#ea2829'}">
+                            {"Profit" if profit2 >= 0 else "Loss"}: ${abs(profit2):,.2f}
+                        </p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
                 )
 
             # Winner announcement
             st.markdown("### Result")
             winner = token1 if roi1 > roi2 else token2
             winner_roi = roi1 if roi1 > roi2 else roi2
+            loser = token2 if roi1 > roi2 else token1
+            loser_roi = roi2 if roi1 > roi2 else roi1
 
             st.markdown(
                 f"""
                 <div style='text-align: center; padding: 2rem; background-color: rgba(206, 126, 0, 0.1); border-radius: 10px;'>
                     <h2 style='margin: 0;'>
-                        <span style='color: #ce7e00;'>${winner['symbol'].upper()}</span> had an increase of 
-                        <span style='color: #ce7e00;'>{format_roi(winner_roi, st.session_state.show_as_percentage)}</span>
+                        <span style='color: #ce7e00;'>${winner['symbol'].upper()}</span> 
+                        outperformed 
+                        <span style='color: #666666;'>${loser['symbol'].upper()}</span>
+                        by 
+                        <span style='color: #09ab3b;'>{format_roi(winner_roi/loser_roi, st.session_state.show_as_percentage)}</span>
                         <br>between {start_date.strftime('%B %d, %Y')} and {end_date.strftime('%B %d, %Y')}
                     </h2>
                 </div>
