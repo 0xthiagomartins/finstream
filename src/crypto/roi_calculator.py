@@ -121,13 +121,6 @@ def render_roi_calculator():
     if token1 and token2 and token1_data and token2_data:
         st.markdown("---")
 
-        # Display token cards
-        col1, col2 = st.columns(2)
-        with col1:
-            display_token_info(token1, token1_data)
-        with col2:
-            display_token_info(token2, token2_data)
-
         # Calculate ROI for both tokens
         start_datetime = datetime.combine(start_date, datetime.min.time())
         end_datetime = datetime.combine(end_date, datetime.max.time())
@@ -166,7 +159,6 @@ def render_roi_calculator():
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        background: rgba(255, 255, 255, 0.1);
                         border-radius: 50%;
                     }
                     .details {
