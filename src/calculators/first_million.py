@@ -409,66 +409,6 @@ def render_first_million():
     """Render the financial goal calculator page."""
     st.title("Financial Goal Calculator")
     
-    # Detailed description in an expander
-    with st.expander("About the Financial Goal Calculator", expanded=False):
-        st.markdown("""
-        ### What is the Financial Goal Calculator?
-        
-        The dream of reaching significant financial milestones is something many individuals share. Whether it's to ensure financial security, fulfill dreams, or achieve economic freedom, these milestones represent important steps toward personal achievement.
-        
-        The good news is that reaching your financial goals doesn't have to be a mystery. With the help of this Financial Goal Calculator, you can create a clear and realistic plan to get there.
-        
-        ### How Does the Calculator Work?
-        
-        This Financial Goal Calculator is a powerful tool designed to simplify the financial planning process. It offers an approach to estimate how much money you would need to invest monthly to reach your financial goal within a specific period, considering a particular interest rate.
-        
-        #### How to Use:
-        1. **Enter Your Initial Information**: Start by entering the value you currently have invested. This includes any savings or investments you've already accumulated.
-        2. **Set the Interest Rate**: Choose the interest rate you expect to earn on your investments over time. This can vary depending on the type of investment and economic conditions.
-        3. **Choose the Investment Period**: Determine the number of years in which you want to reach your financial goal. This can be adapted according to your personal financial goals.
-        
-        The calculator will then automatically provide the monthly amount you should invest to reach your goal within the chosen timeframe, based on the selected interest rate.
-        
-        ### The Formula
-        
-        The formula used to calculate the estimated monthly investment value is:
-        
-        **PMT = (FV − PV) * r / ((1+r)^n −1)**
-        
-        Where:
-        - PMT is the monthly payment (the amount you need to invest every month)
-        - FV is the desired future value (your financial goal)
-        - r is the monthly interest rate (annual interest rate divided by 12 months)
-        - n is the total number of months
-        
-        ### Tips for Reaching Your Financial Goals
-        
-        Investing consistently and intelligently is key to reaching your financial goals. Here are some tips that can help:
-        
-        1. **Diversify Your Investments**: Don't put all your eggs in one basket. Diversifying your investments reduces risk and increases the chances of consistent returns over time.
-        
-        2. **Maintain Discipline**: Commit to investing regularly, even when the market goes through ups and downs. Discipline is essential for long-term success.
-        
-        3. **Harness the Power of Compound Interest**: The earlier you start investing, the more time your investments have to grow with compound interest. Start as soon as possible!
-        
-        4. **Educate Yourself Financially**: Invest time in learning about different types of investments, strategies, and financial concepts. The more you know, the better your decisions will be.
-        
-        Remember that patience, consistency, and knowledge are your allies on this journey toward financial independence.
-        
-        ### Example Calculation
-        
-        Let's say you have an initial investment of $10,000, a monthly interest rate of 0.5% (or 6% annually), and want to reach $1 million in 20 years:
-        
-        - Initial Value (PV) = $10,000
-        - Goal Amount (FV) = $1,000,000
-        - Monthly Rate (r) = 0.005
-        - Time Period (n) = 20 years * 12 = 240 months
-        
-        Using the formula above, you would need to invest approximately $2,134.64 monthly to reach your goal.
-        
-        Note that this is just an example for illustration purposes. Your circumstances and financial goals may vary, so it's important to enter your own values in the calculator to get personalized estimates.
-        """)
-    
     # Calculator mode toggle
     calc_mode = st.toggle(
         "Calculate Required Monthly Investment",
@@ -617,4 +557,63 @@ def render_first_million():
                     "Consider increasing your monthly investment or expected return rate."
                 )
         
-        # Continue with existing visualization code...
+    # Detailed description in an expander
+    with st.expander("About the Financial Goal Calculator", expanded=False):
+        st.markdown("""
+        ### What is the Financial Goal Calculator?
+        
+        The dream of reaching significant financial milestones is something many individuals share. Whether it's to ensure financial security, fulfill dreams, or achieve economic freedom, these milestones represent important steps toward personal achievement.
+        
+        The good news is that reaching your financial goals doesn't have to be a mystery. With the help of this Financial Goal Calculator, you can create a clear and realistic plan to get there.
+        
+        ### How Does the Calculator Work?
+        
+        This Financial Goal Calculator is a powerful tool designed to simplify the financial planning process. It offers an approach to estimate how much money you would need to invest monthly to reach your financial goal within a specific period, considering a particular interest rate.
+        
+        #### How to Use:
+        1. **Enter Your Initial Information**: Start by entering the value you currently have invested. This includes any savings or investments you've already accumulated.
+        2. **Set the Interest Rate**: Choose the interest rate you expect to earn on your investments over time. This can vary depending on the type of investment and economic conditions.
+        3. **Choose the Investment Period**: Determine the number of years in which you want to reach your financial goal. This can be adapted according to your personal financial goals.
+        
+        The calculator will then automatically provide the monthly amount you should invest to reach your goal within the chosen timeframe, based on the selected interest rate.
+        
+        ### The Formula
+        
+        The formula used to calculate the estimated monthly investment value is:
+        
+        **PMT = (FV − PV) * r / ((1+r)^n −1)**
+        
+        Where:
+        - PMT is the monthly payment (the amount you need to invest every month)
+        - FV is the desired future value (your financial goal)
+        - r is the monthly interest rate (annual interest rate divided by 12 months)
+        - n is the total number of months
+        
+        ### Tips for Reaching Your Financial Goals
+        
+        Investing consistently and intelligently is key to reaching your financial goals. Here are some tips that can help:
+        
+        1. **Diversify Your Investments**: Don't put all your eggs in one basket. Diversifying your investments reduces risk and increases the chances of consistent returns over time.
+        
+        2. **Maintain Discipline**: Commit to investing regularly, even when the market goes through ups and downs. Discipline is essential for long-term success.
+        
+        3. **Harness the Power of Compound Interest**: The earlier you start investing, the more time your investments have to grow with compound interest. Start as soon as possible!
+        
+        4. **Educate Yourself Financially**: Invest time in learning about different types of investments, strategies, and financial concepts. The more you know, the better your decisions will be.
+        
+        Remember that patience, consistency, and knowledge are your allies on this journey toward financial independence.
+        
+        ### Example Calculation
+        
+        Let's say you have an initial investment of 10,000, a monthly interest rate of 0.5% (or 6% annually), and want to reach $1 million in 20 years:
+        
+        - Initial Value (PV) = $10,000
+        - Goal Amount (FV) = $1,000,000
+        - Monthly Rate (r) = 0.005
+        - Time Period (n) = 20 years * 12 = 240 months
+        
+        Using the formula above, you would need to invest approximately $2,134.64 monthly to reach your goal.
+        
+        Note that this is just an example for illustration purposes. Your circumstances and financial goals may vary, so it's important to enter your own values in the calculator to get personalized estimates.
+        """)
+    
