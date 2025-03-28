@@ -4,6 +4,7 @@ from first_million import render_first_million
 from net_worth import render_net_worth
 from crypto import render_marketcap_dashboard, render_roi_calculator
 from streamlit_extras.metric_cards import style_metric_cards
+from calculators.compound_interest import render_compound_calculator
 
 
 # Define pages
@@ -44,11 +45,17 @@ roi_calculator_page = st.Page(
     icon=":material/trending_up:",
 )
 
+compound_calculator_page = st.Page(
+    render_compound_calculator,
+    title="Compound Interest",
+    icon=":material/calculator",
+)
+
 # Define navigation structure
 pg = st.navigation(
     {
         "Budget Management": [goals_page, dashboard_page],
-        "Financial Planning": [first_million_page, net_worth_page],
+        "Financial Planning": [first_million_page, net_worth_page, compound_calculator_page],
         "Crypto": [marketcap_of_page, roi_calculator_page],
     }
 )
