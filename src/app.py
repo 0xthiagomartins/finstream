@@ -23,7 +23,7 @@ dashboard_page = st.Page(
 
 first_million_page = st.Page(
     render_first_million,
-    title="Goals & First Million",
+    title="Financial Goals",
     icon=":material/trending_up:",
 )
 

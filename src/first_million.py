@@ -170,257 +170,369 @@ def save_first_million_inputs(
     save_current_state()
 
 
+def calculate_time_to_goal(initial_amount: float, monthly_investment: float, annual_return: float, goal_amount: float) -> tuple:
+    """Calculate time needed to reach financial goal with given monthly investment."""
+    monthly_rate = annual_return / 12
+    total_months = 0
+    current_amount = initial_amount
+    
+    while current_amount < goal_amount:
+        current_amount += monthly_investment
+        interest = current_amount * monthly_rate
+        current_amount += interest
+        total_months += 1
+        
+        if total_months > 1200:  # 100 years limit
+            return None
+    
+    years = total_months // 12
+    months = total_months % 12
+    total_invested = initial_amount + (monthly_investment * total_months)
+    total_interest = current_amount - total_invested
+    
+    return years, months, current_amount, total_invested, total_interest
+
+
+def calculate_required_monthly_investment(initial_amount: float, years: int, annual_return: float, goal_amount: float) -> tuple:
+    """Calculate required monthly investment to reach goal in given time."""
+    months = years * 12
+    monthly_rate = annual_return / 12
+    
+    future_value_initial = initial_amount * (1 + annual_return) ** years
+    remaining_value = goal_amount - future_value_initial
+    
+    if monthly_rate > 0:
+        monthly_payment = (remaining_value * monthly_rate) / ((1 + monthly_rate) ** months - 1)
+    else:
+        monthly_payment = remaining_value / months
+    
+    # Calculate final values
+    current_amount = initial_amount
+    for _ in range(months):
+        current_amount += monthly_payment
+        interest = current_amount * monthly_rate
+        current_amount += interest
+    
+    total_invested = initial_amount + (monthly_payment * months)
+    total_interest = current_amount - total_invested
+    
+    return monthly_payment, current_amount, total_invested, total_interest
+
+
+def create_investment_timeline(initial_amount: float, monthly_investment: float, years: int, annual_return: float) -> pd.DataFrame:
+    """Create a DataFrame with yearly investment data."""
+    monthly_rate = annual_return / 12
+    data = []
+    current_amount = initial_amount
+    
+    for year in range(years + 1):
+        if year == 0:
+            data.append({
+                'Year': year,
+                'Total Amount': initial_amount,
+                'Total Invested': initial_amount,
+                'Total Returns': 0,
+                'Yearly Return': 0
+            })
+            continue
+            
+        yearly_investment = monthly_investment * 12
+        for _ in range(12):
+            current_amount += monthly_investment
+            interest = current_amount * monthly_rate
+            current_amount += interest
+        
+        total_invested = initial_amount + (yearly_investment * year)
+        total_returns = current_amount - total_invested
+        yearly_return = total_returns - (data[-1]['Total Returns'] if data else 0)
+        
+        data.append({
+            'Year': year,
+            'Total Amount': current_amount,
+            'Total Invested': total_invested,
+            'Total Returns': total_returns,
+            'Yearly Return': yearly_return
+        })
+    
+    return pd.DataFrame(data)
+
+
+def render_investment_visualizations(timeline_df: pd.DataFrame, goal_amount: float):
+    """Render investment visualizations using plotly."""
+    # 1. Donut chart for Invested vs Returns
+    final_row = timeline_df.iloc[-1]
+    fig_donut = go.Figure(data=[go.Pie(
+        labels=['Total Invested', 'Total Returns'],
+        values=[final_row['Total Invested'], final_row['Total Returns']],
+        hole=.6,
+        marker_colors=['#1f77b4', '#2ca02c']
+    )])
+    fig_donut.update_layout(
+        title='Investment Composition',
+        showlegend=True,
+        annotations=[dict(text=f'${final_row["Total Amount"]:,.0f}', x=0.5, y=0.5, font_size=20, showarrow=False)]
+    )
+    st.plotly_chart(fig_donut, use_container_width=True)
+    
+    # 2. Line chart showing growth over time
+    fig_line = go.Figure()
+    
+    # Add total amount line
+    fig_line.add_trace(go.Scatter(
+        x=timeline_df['Year'],
+        y=timeline_df['Total Amount'],
+        name='Total Amount',
+        line=dict(color='#1f77b4', width=3)
+    ))
+    
+    # Add invested amount line
+    fig_line.add_trace(go.Scatter(
+        x=timeline_df['Year'],
+        y=timeline_df['Total Invested'],
+        name='Total Invested',
+        line=dict(color='#2ca02c', width=3)
+    ))
+    
+    # Add goal amount line
+    fig_line.add_trace(go.Scatter(
+        x=timeline_df['Year'],
+        y=[goal_amount] * len(timeline_df),
+        name='Goal Amount',
+        line=dict(color='red', width=2, dash='dash')
+    ))
+    
+    fig_line.update_layout(
+        title='Investment Growth Over Time',
+        xaxis_title='Years',
+        yaxis_title='Amount ($)',
+        hovermode='x unified'
+    )
+    st.plotly_chart(fig_line, use_container_width=True)
+    
+    # 3. Detailed table
+    st.markdown("### Detailed Investment Breakdown")
+    st.dataframe(
+        timeline_df.style.format({
+            'Total Amount': '${:,.2f}',
+            'Total Invested': '${:,.2f}',
+            'Total Returns': '${:,.2f}',
+            'Yearly Return': '${:,.2f}'
+        }),
+        hide_index=True,
+        use_container_width=True
+    )
+
+
 def render_first_million():
-    """Render the First Million calculator page."""
-    st.title("Goals & First Million")
-    st.markdown("Calculate your path to financial independence")
-
-    # Data persistence controls
-    col1, col2 = st.sidebar.columns(2)
-
-    with col1:
-        if st.button("Load Saved", help="Load data from CSV files"):
-            load_saved_state()
-            if "first_million_config" in st.session_state:
-                config = st.session_state.first_million_config
-                st.session_state.annual_income = config.get("annual_income", 100_000.0)
-                st.session_state.monthly_income = config.get(
-                    "monthly_income", st.session_state.annual_income / 12
-                )
-            st.rerun()
-
-    with col2:
-        if st.button("Save Data", help="Save current data to CSV"):
-            save_current_state()
-            st.success("Data saved successfully!")
-
-    # Initialize session state for income values if not exists
-    if "annual_income" not in st.session_state:
-        st.session_state.annual_income = 100_000.0
-    if "monthly_income" not in st.session_state:
-        st.session_state.monthly_income = st.session_state.annual_income / 12
-
-    # Income inputs outside the form
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if (
-            st.number_input(
-                "Annual Income",
-                min_value=0.0,
-                value=st.session_state.annual_income,
-                step=1000.0,
-                format="%.2f",
-                help="Your total annual income",
-                key="annual_income_input",
-            )
-            != st.session_state.annual_income
-        ):
-            st.session_state.annual_income = st.session_state.annual_income_input
-            st.session_state.monthly_income = st.session_state.annual_income / 12
-            st.rerun()
-
-    with col2:
-        if (
-            st.number_input(
-                "Monthly Income",
-                min_value=0.0,
-                value=st.session_state.monthly_income,
-                step=100.0,
-                format="%.2f",
-                help="Your monthly income",
-                key="monthly_income_input",
-            )
-            != st.session_state.monthly_income
-        ):
-            st.session_state.monthly_income = st.session_state.monthly_income_input
-            st.session_state.annual_income = st.session_state.monthly_income * 12
-            st.rerun()
-
-    # Form for other inputs and calculations
-    with st.form("investment_calculator"):
-        col1, col2 = st.columns(2)
-
+    """Render the financial goal calculator page."""
+    st.title("Financial Goal Calculator")
+    
+    # Detailed description in an expander
+    with st.expander("About the Financial Goal Calculator", expanded=False):
+        st.markdown("""
+        ### What is the Financial Goal Calculator?
+        
+        The dream of reaching significant financial milestones is something many individuals share. Whether it's to ensure financial security, fulfill dreams, or achieve economic freedom, these milestones represent important steps toward personal achievement.
+        
+        The good news is that reaching your financial goals doesn't have to be a mystery. With the help of this Financial Goal Calculator, you can create a clear and realistic plan to get there.
+        
+        ### How Does the Calculator Work?
+        
+        This Financial Goal Calculator is a powerful tool designed to simplify the financial planning process. It offers an approach to estimate how much money you would need to invest monthly to reach your financial goal within a specific period, considering a particular interest rate.
+        
+        #### How to Use:
+        1. **Enter Your Initial Information**: Start by entering the value you currently have invested. This includes any savings or investments you've already accumulated.
+        2. **Set the Interest Rate**: Choose the interest rate you expect to earn on your investments over time. This can vary depending on the type of investment and economic conditions.
+        3. **Choose the Investment Period**: Determine the number of years in which you want to reach your financial goal. This can be adapted according to your personal financial goals.
+        
+        The calculator will then automatically provide the monthly amount you should invest to reach your goal within the chosen timeframe, based on the selected interest rate.
+        
+        ### The Formula
+        
+        The formula used to calculate the estimated monthly investment value is:
+        
+        **PMT = (FV − PV) * r / ((1+r)^n −1)**
+        
+        Where:
+        - PMT is the monthly payment (the amount you need to invest every month)
+        - FV is the desired future value (your financial goal)
+        - r is the monthly interest rate (annual interest rate divided by 12 months)
+        - n is the total number of months
+        
+        ### Tips for Reaching Your Financial Goals
+        
+        Investing consistently and intelligently is key to reaching your financial goals. Here are some tips that can help:
+        
+        1. **Diversify Your Investments**: Don't put all your eggs in one basket. Diversifying your investments reduces risk and increases the chances of consistent returns over time.
+        
+        2. **Maintain Discipline**: Commit to investing regularly, even when the market goes through ups and downs. Discipline is essential for long-term success.
+        
+        3. **Harness the Power of Compound Interest**: The earlier you start investing, the more time your investments have to grow with compound interest. Start as soon as possible!
+        
+        4. **Educate Yourself Financially**: Invest time in learning about different types of investments, strategies, and financial concepts. The more you know, the better your decisions will be.
+        
+        Remember that patience, consistency, and knowledge are your allies on this journey toward financial independence.
+        
+        ### Example Calculation
+        
+        Let's say you have an initial investment of $10,000, a monthly interest rate of 0.5% (or 6% annually), and want to reach $1 million in 20 years:
+        
+        - Initial Value (PV) = $10,000
+        - Goal Amount (FV) = $1,000,000
+        - Monthly Rate (r) = 0.005
+        - Time Period (n) = 20 years * 12 = 240 months
+        
+        Using the formula above, you would need to invest approximately $2,134.64 monthly to reach your goal.
+        
+        Note that this is just an example for illustration purposes. Your circumstances and financial goals may vary, so it's important to enter your own values in the calculator to get personalized estimates.
+        """)
+    
+    # Calculator mode toggle
+    calc_mode = st.toggle(
+        "Calculate Required Monthly Investment",
+        help="Toggle between calculating time needed or required monthly investment"
+    )
+    
+    # Input form
+    with st.form("goal_calculator"):
+        col1, col2, col3 = st.columns(3)
+        
         with col1:
             initial_amount = st.number_input(
-                "Initial Amount",
+                "Current Savings ($)",
                 min_value=0.0,
                 value=100_000.0,
                 step=1000.0,
-                format="%.2f",
-                help="Current investment amount",
+                help="How much you currently have saved and invested"
             )
-
-        with col2:
-            desired_amount = st.number_input(
-                "Desired Amount",
-                min_value=0.0,
+            
+            goal_amount = st.number_input(
+                "Goal Amount ($)",
+                min_value=100_000.0,
                 value=1_000_000.0,
-                step=10000.0,
-                format="%.2f",
-                help="Your financial goal",
+                step=100_000.0,
+                help="Your desired financial goal"
             )
-
-        calculate = st.form_submit_button("Calculate Projections", type="primary")
-
+        
+        with col2:
+            annual_return = st.number_input(
+                "Annual Return Rate (%)",
+                min_value=0.0,
+                max_value=100.0,
+                value=10.0,
+                step=0.1,
+                help="Expected annual return rate"
+            )
+        
+        with col3:
+            if calc_mode:
+                # Monthly Investment Required mode
+                investment_years = st.number_input(
+                    "Years to Reach Goal",
+                    min_value=1,
+                    value=10,
+                    step=1,
+                    help="In how many years do you want to reach your goal"
+                )
+            else:
+                # Time to Goal mode
+                monthly_investment = st.number_input(
+                    "Monthly Investment ($)",
+                    min_value=0.0,
+                    value=3000.0,
+                    step=100.0,
+                    help="How much you can invest monthly"
+                )
+        
+        calculate = st.form_submit_button("Calculate", type="primary")
+    
     if calculate:
-        save_first_million_inputs(
-            initial_amount,
-            desired_amount,
-            st.session_state.annual_income,
-            st.session_state.monthly_income,
-        )
-
-        # Calculate dynamic year ranges
-        year_ranges = calculate_year_ranges(
-            initial_amount=initial_amount,
-            desired_amount=desired_amount,
-            monthly_income=st.session_state.monthly_income,
-            min_years=5,
-            max_years=40,
-            num_points=7,
-        )
-
-        # Calculate minimum aport needed for first year in range
-        min_aport = calculate_minimum_aport(
-            initial_amount=initial_amount,
-            desired_amount=desired_amount,
-            years=year_ranges[0],
-        )
-
-        # Create aport amounts based on annual income and minimum required
-        aport_amounts = create_aport_amounts(
-            annual_income=st.session_state.annual_income,
-            min_aport=min_aport,
-            qtd=15,
-        )
-
-        # Create projection table
-        df = create_projection_table(
-            initial_amount, desired_amount, aport_amounts, year_ranges
-        )
-
-        # Create style functions for each column
-        def style_cell(val, desired_amount):
-            try:
-                if isinstance(val, str) and val.startswith("$"):
-                    return ""
-                num_val = float(val)
-                return (
-                    "color: #00FF00" if num_val >= desired_amount else "color: #FFFFFF"
-                )
-            except:
-                return ""
-
-        # Format numbers as currency and apply styling
-        styled_df = df.style.apply(
-            lambda x: pd.Series(
-                [style_cell(val, desired_amount) for val in x], index=x.index
-            ),
-            axis=1,
-        )
-
-        # Format values as currency
-        for col in df.columns:
-            if col != "Aport Amount":
-                styled_df = styled_df.format({col: "${:,.2f}"})
-
-        # Display styled table
-        st.dataframe(
-            styled_df,
-            column_config={
-                "Aport Amount": st.column_config.TextColumn(
-                    "Monthly Investment",
-                    help="Monthly investment amount",
-                ),
-                **{
-                    f"{year} Years": st.column_config.TextColumn(
-                        f"{year} Years",
-                        help=f"Projected value after {year} years",
-                    )
-                    for year in year_ranges
-                },
-            },
-            hide_index=True,
-            use_container_width=True,
-        )
-
-        # Create accumulation plot
-        fig = go.Figure()
-
-        # Create detailed year range for plot (year by year)
-        plot_years = list(range(1, max(year_ranges) + 1))
-
-        # Add a line for each aport amount
-        for aport in aport_amounts:
-            y_values = [
-                calculate_future_value(initial_amount, aport, year)
-                for year in plot_years
-            ]
-
-            fig.add_trace(
-                go.Scatter(
-                    x=plot_years,
-                    y=y_values,
-                    name=f"${aport:,.2f}/month",
-                    hovertemplate="Year %{x}<br>Amount: $%{y:,.2f}<extra></extra>",
-                )
+        if calc_mode:
+            # Calculate required monthly investment
+            monthly_needed, final_amount, total_invested, total_interest = calculate_required_monthly_investment(
+                initial_amount, investment_years, annual_return / 100, goal_amount
             )
-
-        # Add horizontal line for desired amount
-        fig.add_hline(
-            y=desired_amount,
-            line_dash="dash",
-            line_color="#ce7e00",
-            annotation_text="Goal",
-            annotation_position="right",
-        )
-
-        # Update layout
-        fig.update_layout(
-            title="Investment Growth Projection",
-            xaxis_title="Years",
-            yaxis_title="Accumulated Amount ($)",
-            hovermode="x unified",
-            showlegend=True,
-            legend_title="Monthly Investment",
-            plot_bgcolor="#0E1117",
-            paper_bgcolor="#0E1117",
-            font=dict(color="#FFFFFF"),
-            xaxis=dict(
-                gridcolor="#2e3026",
-                tickformat="d",
-                # Add tick for each year
-                dtick=1,
-            ),
-            yaxis=dict(
-                gridcolor="#2e3026",
-                tickformat="$,.0f",
-                range=[
-                    0,
-                    min(
-                        desired_amount * 1.5,  # Maximum 5x the goal
-                        max(
-                            desired_amount * 1.5,  # Minimum +20% of goal
-                            max(
-                                y_values
-                            ),  # But never less than maximum projected value
-                        ),
-                    ),
-                ],
-            ),
-        )
-
-        # Display plot
-        st.plotly_chart(fig, use_container_width=True)
-
-        # Add explanatory text
-        st.markdown(
-            """
-        ### Assumptions:
-        - Annual return rate: 10%
-        - Calculations consider compound interest
-        - Values in green indicate reaching your desired amount
-        - All projections include your initial investment amount
-        """
-        )
+            
+            # Display summary
+            st.markdown(
+                f"""
+                ### Required Monthly Investment
+                
+                Considering your initial ${initial_amount:,.2f} in savings and investments, 
+                you need to invest **${monthly_needed:,.2f} monthly** to reach ${goal_amount:,.2f} in {investment_years} years!
+                
+                This way, you will reach ${final_amount:,.2f}, with ${total_invested:,.2f} invested 
+                and ${total_interest:,.2f} in returns.
+                """
+            )
+            
+            # Display metrics
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Final Amount", f"${final_amount:,.2f}")
+            with col2:
+                st.metric("Total Invested", f"${total_invested:,.2f}")
+            with col3:
+                st.metric("Total Returns", f"${total_interest:,.2f}")
+            with col4:
+                st.metric("Required Monthly Investment", f"${monthly_needed:,.2f}")
+            
+            # Add visualizations
+            timeline_df = create_investment_timeline(
+                initial_amount,
+                monthly_needed,
+                investment_years,
+                annual_return / 100
+            )
+            render_investment_visualizations(timeline_df, goal_amount)
+            
+        else:
+            # Calculate time needed
+            result = calculate_time_to_goal(
+                initial_amount, monthly_investment, annual_return / 100, goal_amount
+            )
+            
+            if result:
+                years, months, final_amount, total_invested, total_interest = result
+                
+                # Display summary
+                st.markdown(
+                    f"""
+                    ### Investment Timeline
+                    
+                    You will reach ${goal_amount:,.2f} in **{years} years and {months} months**.
+                    
+                    After this period, the total amount will be ${final_amount:,.2f}, 
+                    with ${total_invested:,.2f} invested and ${total_interest:,.2f} in returns.
+                    """
+                )
+                
+                # Display metrics
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Final Amount", f"${final_amount:,.2f}")
+                with col2:
+                    st.metric("Total Invested", f"${total_invested:,.2f}")
+                with col3:
+                    st.metric("Total Returns", f"${total_interest:,.2f}")
+                with col4:
+                    st.metric(
+                        "Time to Goal", 
+                        f"{years}y {months}m"
+                    )
+                
+                # Add visualizations
+                timeline_df = create_investment_timeline(
+                    initial_amount,
+                    monthly_investment,
+                    years + (1 if months > 0 else 0),
+                    annual_return / 100
+                )
+                render_investment_visualizations(timeline_df, goal_amount)
+            else:
+                st.error(
+                    "With the current parameters, it will take over 100 years to reach your goal. "
+                    "Consider increasing your monthly investment or expected return rate."
+                )
+        
+        # Continue with existing visualization code...

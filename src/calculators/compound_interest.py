@@ -216,9 +216,8 @@ def render_compound_calculator():
         )
     
     # Add detailed explanation in an expander
-    with st.expander("What is Compound Interest?", expanded=False):
+    with st.expander("What is Compound Interest?", expanded=True):
         st.markdown("""
-        ### What is Compound Interest?
         
         Compound interest is interest calculated not only on the initial principal but also on the accumulated interest over time, resulting in the famous "interest on interest" effect.
         
@@ -255,7 +254,7 @@ def render_compound_calculator():
         Multiplying the initial capital by the result:
         M = 10,000 * 1.331 = $13,310
         
-        Therefore, after 3 years, with a 10% annual interest rate and an initial investment of $10,000, the total amount would be $13,310.
+        Therefore, after 3 years, with a 10% annual interest rate and an initial investment of 10,000 the total amount would be 13,310.
         
         Fun fact: Under the same conditions with simple interest, the final amount would be $13,000.
         
