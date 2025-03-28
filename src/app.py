@@ -1,10 +1,9 @@
 import streamlit as st
 from budget import render_budget_dashboard, render_budget_goals_page
-from first_million import render_first_million
+from calculators import render_first_million, render_compound_calculator
 from net_worth import render_net_worth
 from crypto import render_marketcap_dashboard, render_roi_calculator
 from streamlit_extras.metric_cards import style_metric_cards
-from calculators.compound_interest import render_compound_calculator
 
 
 # Define pages
