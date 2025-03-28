@@ -220,7 +220,7 @@ def calculate_required_monthly_investment(initial_amount: float, years: int, ann
 
 
 def create_investment_timeline(initial_amount: float, monthly_investment: float, years: int, annual_return: float) -> pd.DataFrame:
-    """Create a DataFrame with monthly investment data."""
+    """Create a DataFrame with monthly investment data, separating initial savings."""
     monthly_rate = annual_return / 12
     data = []
     current_amount = initial_amount
@@ -228,47 +228,56 @@ def create_investment_timeline(initial_amount: float, monthly_investment: float,
     # Initialize first month
     data.append({
         'Month': 0,
-        'Total Amount': initial_amount,
-        'Total Invested': initial_amount,
+        'Initial Savings': initial_amount,
+        'Monthly Investments': 0,
         'Total Returns': 0,
-        'Monthly Return': 0
+        'Monthly Return': 0,
+        'Total Amount': initial_amount
     })
     
     # Calculate monthly data
     for month in range(1, (years * 12) + 1):
+        # Add monthly investment
         current_amount += monthly_investment
+        
+        # Calculate interest
         interest = current_amount * monthly_rate
         current_amount += interest
         
-        total_invested = initial_amount + (monthly_investment * month)
-        total_returns = current_amount - total_invested
-        monthly_return = interest
+        # Calculate components
+        monthly_investments = monthly_investment * month
+        total_returns = current_amount - initial_amount - monthly_investments
         
         data.append({
             'Month': month,
-            'Total Amount': current_amount,
-            'Total Invested': total_invested,
+            'Initial Savings': initial_amount,
+            'Monthly Investments': monthly_investments,
             'Total Returns': total_returns,
-            'Monthly Return': monthly_return
+            'Monthly Return': interest,
+            'Total Amount': current_amount
         })
     
     return pd.DataFrame(data)
 
 
-def render_investment_visualizations(timeline_df: pd.DataFrame, goal_amount: float):
+def render_investment_visualizations(timeline_df: pd.DataFrame, goal_amount: float, initial_amount: float):
     """Render investment visualizations using plotly."""
     final_row = timeline_df.iloc[-1]
     
     # Create two columns for the charts
-    col1, col2 = st.columns([1, 2])  # Adjusted ratio for better visibility
+    col1, col2 = st.columns([1, 2])
     
     with col1:
         # 1. Donut chart for final composition
         fig_donut = go.Figure(data=[go.Pie(
-            labels=['Total Invested', 'Total Returns'],
-            values=[final_row['Total Invested'], final_row['Total Returns']],
+            labels=['Initial Savings', 'Monthly Investments', 'Total Returns'],
+            values=[
+                final_row['Initial Savings'],
+                final_row['Monthly Investments'],
+                final_row['Total Returns']
+            ],
             hole=.6,
-            marker_colors=['#1f77b4', '#ce7e00']
+            marker_colors=['#2ca02c', '#1f77b4', '#ce7e00']
         )])
         fig_donut.update_layout(
             title='Final Investment Composition',
@@ -288,11 +297,19 @@ def render_investment_visualizations(timeline_df: pd.DataFrame, goal_amount: flo
         # 2. Monthly stacked bar chart
         fig_bar = go.Figure()
         
-        # Add invested amount bars
+        # Add initial savings bars
         fig_bar.add_trace(go.Bar(
-            name='Invested Amount',
+            name='Initial Savings',
             x=timeline_df['Month'],
-            y=timeline_df['Total Invested'],
+            y=timeline_df['Initial Savings'],
+            marker_color='#2ca02c'
+        ))
+        
+        # Add monthly investments bars
+        fig_bar.add_trace(go.Bar(
+            name='Monthly Investments',
+            x=timeline_df['Month'],
+            y=timeline_df['Monthly Investments'],
             marker_color='#1f77b4'
         ))
         
@@ -304,7 +321,7 @@ def render_investment_visualizations(timeline_df: pd.DataFrame, goal_amount: flo
             marker_color='#ce7e00'
         ))
         
-        # Update layout
+        # Update layout with dark theme hover
         fig_bar.update_layout(
             title='Monthly Investment Growth',
             barmode='stack',
@@ -313,11 +330,16 @@ def render_investment_visualizations(timeline_df: pd.DataFrame, goal_amount: flo
             xaxis_title='Month',
             yaxis_title='Amount ($)',
             hovermode='x unified',
-            # Add hover template
             hoverlabel=dict(
-                bgcolor="white",
-                font_size=16,
-            )
+                bgcolor='#1e1e1e',  # Dark background
+                font=dict(
+                    color='white',   # White text
+                    size=16,
+                ),
+                bordercolor='#ce7e00'  # Orange border
+            ),
+            plot_bgcolor='rgba(0,0,0,0)',  # Transparent background
+            paper_bgcolor='rgba(0,0,0,0)'  # Transparent paper
         )
         
         # Add goal amount line
@@ -331,6 +353,7 @@ def render_investment_visualizations(timeline_df: pd.DataFrame, goal_amount: flo
         # Update traces for better hover information
         fig_bar.update_traces(
             hovertemplate="<br>".join([
+                "<b>%{data.name}</b>",  # Bold name of the trace
                 "Month: %{x}",
                 "Amount: $%{y:,.2f}",
                 "<extra></extra>"
@@ -339,21 +362,45 @@ def render_investment_visualizations(timeline_df: pd.DataFrame, goal_amount: flo
         
         st.plotly_chart(fig_bar, use_container_width=True)
     
-    
-    # 4. Detailed table (now showing monthly data)
+    # 3. Detailed table
     st.markdown("### Detailed Monthly Breakdown")
     display_df = timeline_df.copy()
-    # Convert month numbers to more readable format
-    display_df['Month'] = display_df['Month'].apply(lambda x: f"Month {x}")
     
+    # Reorder columns
+    display_df = display_df[[
+        'Initial Savings',
+        'Monthly Investments',
+        'Total Returns',
+        'Monthly Return',
+        'Total Amount'
+    ]]
+    
+    # Create the styler object
+    styler = display_df.style.format({
+        'Initial Savings': '${:,.2f}',
+        'Monthly Investments': '${:,.2f}',
+        'Total Returns': '${:,.2f}',
+        'Monthly Return': '${:,.2f}',
+        'Total Amount': '${:,.2f}'
+    })
+    
+    # Apply background color to Total Amount column
+    styler.set_properties(
+        subset=['Total Amount'],
+        **{'background-color': '#1e1e1e', 'color': '#ce7e00', 'font-weight': 'bold'}
+    )
+    
+    # Display the table with month index
     st.dataframe(
-        display_df.style.format({
-            'Total Amount': '${:,.2f}',
-            'Total Invested': '${:,.2f}',
-            'Total Returns': '${:,.2f}',
-            'Monthly Return': '${:,.2f}'
-        }),
-        hide_index=True,
+        styler,
+        column_config={
+            "Initial Savings": "Initial",
+            "Monthly Investments": "Invested",
+            "Total Returns": "Returns",
+            "Monthly Return": "Monthly Interest",
+            "Total Amount": "Total"
+        },
+        hide_index=False,
         use_container_width=True
     )
 
@@ -519,7 +566,7 @@ def render_first_million():
                 investment_years,
                 annual_return / 100
             )
-            render_investment_visualizations(timeline_df, goal_amount)
+            render_investment_visualizations(timeline_df, goal_amount, initial_amount)
             
         else:
             # Calculate time needed
@@ -563,7 +610,7 @@ def render_first_million():
                     years + (1 if months > 0 else 0),
                     annual_return / 100
                 )
-                render_investment_visualizations(timeline_df, goal_amount)
+                render_investment_visualizations(timeline_df, goal_amount, initial_amount)
             else:
                 st.error(
                     "With the current parameters, it will take over 100 years to reach your goal. "
