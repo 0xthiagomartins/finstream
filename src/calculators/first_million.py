@@ -220,38 +220,36 @@ def calculate_required_monthly_investment(initial_amount: float, years: int, ann
 
 
 def create_investment_timeline(initial_amount: float, monthly_investment: float, years: int, annual_return: float) -> pd.DataFrame:
-    """Create a DataFrame with yearly investment data."""
+    """Create a DataFrame with monthly investment data."""
     monthly_rate = annual_return / 12
     data = []
     current_amount = initial_amount
     
-    for year in range(years + 1):
-        if year == 0:
-            data.append({
-                'Year': year,
-                'Total Amount': initial_amount,
-                'Total Invested': initial_amount,
-                'Total Returns': 0,
-                'Yearly Return': 0
-            })
-            continue
-            
-        yearly_investment = monthly_investment * 12
-        for _ in range(12):
-            current_amount += monthly_investment
-            interest = current_amount * monthly_rate
-            current_amount += interest
+    # Initialize first month
+    data.append({
+        'Month': 0,
+        'Total Amount': initial_amount,
+        'Total Invested': initial_amount,
+        'Total Returns': 0,
+        'Monthly Return': 0
+    })
+    
+    # Calculate monthly data
+    for month in range(1, (years * 12) + 1):
+        current_amount += monthly_investment
+        interest = current_amount * monthly_rate
+        current_amount += interest
         
-        total_invested = initial_amount + (yearly_investment * year)
+        total_invested = initial_amount + (monthly_investment * month)
         total_returns = current_amount - total_invested
-        yearly_return = total_returns - (data[-1]['Total Returns'] if data else 0)
+        monthly_return = interest
         
         data.append({
-            'Year': year,
+            'Month': month,
             'Total Amount': current_amount,
             'Total Invested': total_invested,
             'Total Returns': total_returns,
-            'Yearly Return': yearly_return
+            'Monthly Return': monthly_return
         })
     
     return pd.DataFrame(data)
@@ -259,43 +257,107 @@ def create_investment_timeline(initial_amount: float, monthly_investment: float,
 
 def render_investment_visualizations(timeline_df: pd.DataFrame, goal_amount: float):
     """Render investment visualizations using plotly."""
-    # 1. Donut chart for Invested vs Returns
     final_row = timeline_df.iloc[-1]
-    fig_donut = go.Figure(data=[go.Pie(
-        labels=['Total Invested', 'Total Returns'],
-        values=[final_row['Total Invested'], final_row['Total Returns']],
-        hole=.6,
-        marker_colors=['#1f77b4', '#2ca02c']
-    )])
-    fig_donut.update_layout(
-        title='Investment Composition',
-        showlegend=True,
-        annotations=[dict(text=f'${final_row["Total Amount"]:,.0f}', x=0.5, y=0.5, font_size=20, showarrow=False)]
-    )
-    st.plotly_chart(fig_donut, use_container_width=True)
     
-    # 2. Line chart showing growth over time
+    # Create two columns for the charts
+    col1, col2 = st.columns([1, 2])  # Adjusted ratio for better visibility
+    
+    with col1:
+        # 1. Donut chart for final composition
+        fig_donut = go.Figure(data=[go.Pie(
+            labels=['Total Invested', 'Total Returns'],
+            values=[final_row['Total Invested'], final_row['Total Returns']],
+            hole=.6,
+            marker_colors=['#1f77b4', '#ce7e00']
+        )])
+        fig_donut.update_layout(
+            title='Final Investment Composition',
+            showlegend=True,
+            height=400,
+            annotations=[dict(
+                text=f'${final_row["Total Amount"]:,.0f}',
+                x=0.5,
+                y=0.5,
+                font_size=20,
+                showarrow=False
+            )]
+        )
+        st.plotly_chart(fig_donut, use_container_width=True)
+    
+    with col2:
+        # 2. Monthly stacked bar chart
+        fig_bar = go.Figure()
+        
+        # Add invested amount bars
+        fig_bar.add_trace(go.Bar(
+            name='Invested Amount',
+            x=timeline_df['Month'],
+            y=timeline_df['Total Invested'],
+            marker_color='#1f77b4'
+        ))
+        
+        # Add returns bars
+        fig_bar.add_trace(go.Bar(
+            name='Returns',
+            x=timeline_df['Month'],
+            y=timeline_df['Total Returns'],
+            marker_color='#ce7e00'
+        ))
+        
+        # Update layout
+        fig_bar.update_layout(
+            title='Monthly Investment Growth',
+            barmode='stack',
+            height=400,
+            showlegend=True,
+            xaxis_title='Month',
+            yaxis_title='Amount ($)',
+            hovermode='x unified',
+            # Add hover template
+            hoverlabel=dict(
+                bgcolor="white",
+                font_size=16,
+            )
+        )
+        
+        # Add goal amount line
+        fig_bar.add_trace(go.Scatter(
+            x=timeline_df['Month'],
+            y=[goal_amount] * len(timeline_df),
+            name='Goal Amount',
+            line=dict(color='red', width=2, dash='dash')
+        ))
+        
+        # Update traces for better hover information
+        fig_bar.update_traces(
+            hovertemplate="<br>".join([
+                "Month: %{x}",
+                "Amount: $%{y:,.2f}",
+                "<extra></extra>"
+            ])
+        )
+        
+        st.plotly_chart(fig_bar, use_container_width=True)
+    
+    # 3. Line chart showing growth over time (full width)
     fig_line = go.Figure()
     
-    # Add total amount line
     fig_line.add_trace(go.Scatter(
-        x=timeline_df['Year'],
+        x=timeline_df['Month'],
         y=timeline_df['Total Amount'],
         name='Total Amount',
         line=dict(color='#1f77b4', width=3)
     ))
     
-    # Add invested amount line
     fig_line.add_trace(go.Scatter(
-        x=timeline_df['Year'],
+        x=timeline_df['Month'],
         y=timeline_df['Total Invested'],
         name='Total Invested',
-        line=dict(color='#2ca02c', width=3)
+        line=dict(color='#ce7e00', width=3)
     ))
     
-    # Add goal amount line
     fig_line.add_trace(go.Scatter(
-        x=timeline_df['Year'],
+        x=timeline_df['Month'],
         y=[goal_amount] * len(timeline_df),
         name='Goal Amount',
         line=dict(color='red', width=2, dash='dash')
@@ -303,20 +365,25 @@ def render_investment_visualizations(timeline_df: pd.DataFrame, goal_amount: flo
     
     fig_line.update_layout(
         title='Investment Growth Over Time',
-        xaxis_title='Years',
+        xaxis_title='Month',
         yaxis_title='Amount ($)',
-        hovermode='x unified'
+        hovermode='x unified',
+        height=500
     )
     st.plotly_chart(fig_line, use_container_width=True)
     
-    # 3. Detailed table
-    st.markdown("### Detailed Investment Breakdown")
+    # 4. Detailed table (now showing monthly data)
+    st.markdown("### Detailed Monthly Breakdown")
+    display_df = timeline_df.copy()
+    # Convert month numbers to more readable format
+    display_df['Month'] = display_df['Month'].apply(lambda x: f"Month {x}")
+    
     st.dataframe(
-        timeline_df.style.format({
+        display_df.style.format({
             'Total Amount': '${:,.2f}',
             'Total Invested': '${:,.2f}',
             'Total Returns': '${:,.2f}',
-            'Yearly Return': '${:,.2f}'
+            'Monthly Return': '${:,.2f}'
         }),
         hide_index=True,
         use_container_width=True
@@ -502,8 +569,8 @@ def render_first_million():
                     
                     You will reach ${goal_amount:,.2f} in **{years} years and {months} months**.
                     
-                    After this period, the total amount will be ${final_amount:,.2f}, 
-                    with ${total_invested:,.2f} invested and ${total_interest:,.2f} in returns.
+                    After this period, the total amount will be {final_amount:,.2f}, 
+                    with {total_invested:,.2f} invested and {total_interest:,.2f} in returns.
                     """
                 )
                 

@@ -161,7 +161,7 @@ def render_compound_calculator():
             labels=['Total Invested', 'Interest Earned'],
             values=[final_row['Total Invested'], final_row['Interest']],
             hole=.7,
-            marker_colors=['#1f77b4', '#2ca02c']
+            marker_colors=['#1f77b4', '#ce7e00']
         )])
         
         fig1.update_layout(
@@ -177,7 +177,7 @@ def render_compound_calculator():
                 name='Interest',
                 x=df['Month'],
                 y=df['Interest'],
-                marker_color='#2ca02c'
+                marker_color='#ce7e00'
             ),
             go.Bar(
                 name='Invested Amount',
