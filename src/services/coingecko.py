@@ -1,6 +1,8 @@
 import requests
 import time
 from config import COINGECKO_API_BASE_URL
+from .cache_manager import CacheManager
+from concurrent.futures import ThreadPoolExecutor
 
 
 class CoinGeckoAPI:
@@ -9,6 +11,8 @@ class CoinGeckoAPI:
         self.headers = {
             "Content-Type": "application/json",
         }
+        self.cache = CacheManager(max_size=100, ttl=300)  # 5 minutes TTL
+        self.executor = ThreadPoolExecutor(max_workers=3)
 
     def _make_request(self, endpoint: str, params: dict = None, max_retries: int = 3) -> dict:
         """Make a request to the CoinGecko API with retry logic."""
@@ -21,7 +25,7 @@ class CoinGeckoAPI:
                 )
                 
                 if response.status_code == 429:  # Rate limit hit
-                    wait_time = 2 ** attempt * 30  # Exponential backoff: 30s, 60s, 120s
+                    wait_time = 2 ** attempt * 30  # Exponential backoff
                     time.sleep(wait_time)
                     continue
                     
@@ -36,16 +40,19 @@ class CoinGeckoAPI:
                 time.sleep(2 ** attempt * 30)  # Exponential backoff before retry
 
     def get_coin_data(self, coin_id: str) -> dict:
-        """Get detailed data for a specific coin."""
-        time.sleep(6)  # Add delay between requests
-        return self._make_request(
-            f"coins/{coin_id}",
-            {
-                "localization": "false",
-                "tickers": "false",
-                "community_data": "false",
-                "developer_data": "false",
-            },
+        """Get detailed data for a specific coin with caching."""
+        cache_key = f"coin_data:{coin_id}"
+        return self.cache.get_or_set(
+            cache_key,
+            lambda: self._make_request(
+                f"coins/{coin_id}",
+                {
+                    "localization": "false",
+                    "tickers": "false",
+                    "community_data": "false",
+                    "developer_data": "false",
+                },
+            )
         )
 
     def search_coins(self, query: str) -> dict:
@@ -56,13 +63,38 @@ class CoinGeckoAPI:
     def get_market_chart(
         self, coin_id: str, vs_currency: str = "usd", days: int = 1
     ) -> dict:
-        """Get market chart data for a coin."""
-        time.sleep(6)  # Add delay between requests
-        return self._make_request(
-            f"coins/{coin_id}/market_chart",
-            params={
-                "vs_currency": vs_currency,
-                "days": days,
-                "interval": "daily"
-            }
+        """Get market chart data for a coin with caching."""
+        cache_key = f"market_chart:{coin_id}:{vs_currency}:{days}"
+        return self.cache.get_or_set(
+            cache_key,
+            lambda: self._make_request(
+                f"coins/{coin_id}/market_chart",
+                params={
+                    "vs_currency": vs_currency,
+                    "days": days,
+                    "interval": "daily"
+                }
+            )
         )
+
+    def batch_get_market_charts(self, coin_ids: list, vs_currency: str = "usd", days: int = 1) -> dict:
+        """Get market chart data for multiple coins in parallel."""
+        def fetch_single(coin_id):
+            try:
+                return coin_id, self.get_market_chart(coin_id, vs_currency, days)
+            except Exception as e:
+                return coin_id, None
+
+        # Use ThreadPoolExecutor for parallel requests
+        results = {}
+        futures = [
+            self.executor.submit(fetch_single, coin_id)
+            for coin_id in coin_ids
+        ]
+        
+        for future in futures:
+            coin_id, data = future.result()
+            if data:
+                results[coin_id] = data
+                
+        return results
