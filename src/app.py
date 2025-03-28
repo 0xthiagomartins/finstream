@@ -48,7 +48,7 @@ roi_calculator_page = st.Page(
 compound_calculator_page = st.Page(
     render_compound_calculator,
     title="Compound Interest",
-    icon=":material/calculator",
+    icon=":material/percent:",
 )
 
 # Define navigation structure
