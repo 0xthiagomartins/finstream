@@ -264,3 +264,17 @@ def render_correlation_dashboard():
     
     # Render explanation
     render_correlation_explanation()
+    
+    # Add CoinGecko attribution at the bottom
+    st.markdown(
+        """
+        <div style='position: fixed; bottom: 0; right: 0; padding: 1rem; 
+             background-color: #1E1E1E; border-top-left-radius: 5px;'>
+            <a href='https://www.coingecko.com/' target='_blank' 
+               style='color: #666; text-decoration: none; font-size: 0.8rem;'>
+                Data powered by CoinGecko
+            </a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
