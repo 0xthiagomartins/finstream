@@ -66,76 +66,6 @@ def render_compound_calculator():
     """Render the compound interest calculator interface."""
     st.title("Compound Interest Calculator")
     
-    # Add detailed explanation in an expander
-    with st.expander("What is Compound Interest?", expanded=False):
-        st.markdown("""
-        ### What is Compound Interest?
-        
-        Compound interest is interest calculated not only on the initial principal but also on the accumulated interest over time, resulting in the famous "interest on interest" effect.
-        
-        As interest is added to the initial capital, the total amount increases, and subsequent interest is calculated based on this new value.
-        
-        In practice, this generates an exponential growth effect, which is highly beneficial for long-term investors (receiving interest on interest) but can be detrimental for those taking long-term loans and financing (paying interest on interest).
-        
-        ### How Does the Compound Interest Formula Work?
-        
-        The compound interest formula is:
-        
-        **M = P(1+r)^t**
-        
-        Where:
-        - M is the total amount, including principal and accumulated interest
-        - P is the principal (initial investment or loan amount)
-        - r is the interest rate per period
-        - t is the time period over which interest is applied
-        
-        ### Practical Example
-        
-        Let's say you make an initial investment of $10,000 with a 10% annual interest rate. Let's calculate the amount after 3 years:
-        
-        - P = $10,000 (initial capital)
-        - r = 10% (annual interest rate)
-        - t = 3 years (time)
-        
-        Plugging these values into the formula:
-        M = 10,000 * (1 + 0.10)^3
-        
-        Calculating (1 + 0.10)^3:
-        (1 + 0.10)^3 = 1.10 * 1.10 * 1.10 = 1.331
-        
-        Multiplying the initial capital by the result:
-        M = 10,000 * 1.331 = $13,310
-        
-        Therefore, after 3 years, with a 10% annual interest rate and an initial investment of $10,000, the total amount would be $13,310.
-        
-        Fun fact: Under the same conditions with simple interest, the final amount would be $13,000.
-        
-        ### Simple vs. Compound Interest
-        
-        The difference between simple and compound interest lies in how interest is calculated over time:
-        - Simple interest is calculated only on the initial amount
-        - Compound interest is calculated on both the initial amount and previously accumulated interest
-        
-        In terms of results, compound interest tends to accumulate a larger amount over time than simple interest.
-        
-        ### Benefits for Investors
-        
-        Compound interest offers several benefits to investors, but the main advantage is the potential for accelerated investment growth over time.
-        
-        As interest and dividends are reinvested, the total amount increases exponentially, allowing investors to grow their wealth more rapidly.
-        
-        ### Strategies to Maximize Compound Interest
-        
-        To make the most of compound interest, consider these strategies:
-        
-        1. Start investing as early as possible to maximize growth time
-        2. Maintain investments for long periods to allow continuous compound interest accumulation
-        3. Make regular monthly contributions to your investments
-        4. Look for investment options with competitive interest rates
-        5. Reinvest earnings to increase principal and boost compound interest growth
-        
-        To enhance the compound interest effect, investors typically make regular monthly contributions, which this calculator helps you simulate.
-        """)
     
     # Input form
     with st.form("compound_calculator"):
@@ -283,4 +213,76 @@ def render_compound_calculator():
             }),
             hide_index=True,
             use_container_width=True
-        ) 
+        )
+    
+    # Add detailed explanation in an expander
+    with st.expander("What is Compound Interest?", expanded=False):
+        st.markdown("""
+        ### What is Compound Interest?
+        
+        Compound interest is interest calculated not only on the initial principal but also on the accumulated interest over time, resulting in the famous "interest on interest" effect.
+        
+        As interest is added to the initial capital, the total amount increases, and subsequent interest is calculated based on this new value.
+        
+        In practice, this generates an exponential growth effect, which is highly beneficial for long-term investors (receiving interest on interest) but can be detrimental for those taking long-term loans and financing (paying interest on interest).
+        
+        ### How Does the Compound Interest Formula Work?
+        
+        The compound interest formula is:
+        
+        **M = P(1+r)^t**
+        
+        Where:
+        - M is the total amount, including principal and accumulated interest
+        - P is the principal (initial investment or loan amount)
+        - r is the interest rate per period
+        - t is the time period over which interest is applied
+        
+        ### Practical Example
+        
+        Let's say you make an initial investment of $10,000 with a 10% annual interest rate. Let's calculate the amount after 3 years:
+        
+        - P = $10,000 (initial capital)
+        - r = 10% (annual interest rate)
+        - t = 3 years (time)
+        
+        Plugging these values into the formula:
+        M = 10,000 * (1 + 0.10)^3
+        
+        Calculating (1 + 0.10)^3:
+        (1 + 0.10)^3 = 1.10 * 1.10 * 1.10 = 1.331
+        
+        Multiplying the initial capital by the result:
+        M = 10,000 * 1.331 = $13,310
+        
+        Therefore, after 3 years, with a 10% annual interest rate and an initial investment of $10,000, the total amount would be $13,310.
+        
+        Fun fact: Under the same conditions with simple interest, the final amount would be $13,000.
+        
+        ### Simple vs. Compound Interest
+        
+        The difference between simple and compound interest lies in how interest is calculated over time:
+        - Simple interest is calculated only on the initial amount
+        - Compound interest is calculated on both the initial amount and previously accumulated interest
+        
+        In terms of results, compound interest tends to accumulate a larger amount over time than simple interest.
+        
+        ### Benefits for Investors
+        
+        Compound interest offers several benefits to investors, but the main advantage is the potential for accelerated investment growth over time.
+        
+        As interest and dividends are reinvested, the total amount increases exponentially, allowing investors to grow their wealth more rapidly.
+        
+        ### Strategies to Maximize Compound Interest
+        
+        To make the most of compound interest, consider these strategies:
+        
+        1. Start investing as early as possible to maximize growth time
+        2. Maintain investments for long periods to allow continuous compound interest accumulation
+        3. Make regular monthly contributions to your investments
+        4. Look for investment options with competitive interest rates
+        5. Reinvest earnings to increase principal and boost compound interest growth
+        
+        To enhance the compound interest effect, investors typically make regular monthly contributions, which this calculator helps you simulate.
+        """)
+    
