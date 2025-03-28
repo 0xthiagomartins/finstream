@@ -339,38 +339,6 @@ def render_investment_visualizations(timeline_df: pd.DataFrame, goal_amount: flo
         
         st.plotly_chart(fig_bar, use_container_width=True)
     
-    # 3. Line chart showing growth over time (full width)
-    fig_line = go.Figure()
-    
-    fig_line.add_trace(go.Scatter(
-        x=timeline_df['Month'],
-        y=timeline_df['Total Amount'],
-        name='Total Amount',
-        line=dict(color='#1f77b4', width=3)
-    ))
-    
-    fig_line.add_trace(go.Scatter(
-        x=timeline_df['Month'],
-        y=timeline_df['Total Invested'],
-        name='Total Invested',
-        line=dict(color='#ce7e00', width=3)
-    ))
-    
-    fig_line.add_trace(go.Scatter(
-        x=timeline_df['Month'],
-        y=[goal_amount] * len(timeline_df),
-        name='Goal Amount',
-        line=dict(color='red', width=2, dash='dash')
-    ))
-    
-    fig_line.update_layout(
-        title='Investment Growth Over Time',
-        xaxis_title='Month',
-        yaxis_title='Amount ($)',
-        hovermode='x unified',
-        height=500
-    )
-    st.plotly_chart(fig_line, use_container_width=True)
     
     # 4. Detailed table (now showing monthly data)
     st.markdown("### Detailed Monthly Breakdown")
