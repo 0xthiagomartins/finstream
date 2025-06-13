@@ -3,7 +3,7 @@ from budget import render_budget_dashboard, render_budget_goals_page
 from calculators import render_first_million, render_compound_calculator
 from calculators.fii_comparator import render_fii_comparator
 from net_worth import render_net_worth
-from crypto import render_marketcap_dashboard, render_roi_calculator, render_correlation_dashboard
+from crypto import render_marketcap_dashboard, render_roi_calculator, render_correlation_dashboard, render_price_ratio_dashboard
 from streamlit_extras.metric_cards import style_metric_cards
 
 
@@ -63,13 +63,19 @@ correlation_dashboard_page = st.Page(
     icon=":material/analytics:",
 )
 
+price_ratio_page = st.Page(
+    render_price_ratio_dashboard,
+    title="Price Ratio",
+    icon=":material/scale:",
+)
+
 # Define navigation structure with new Investment Analysis category
 pg = st.navigation(
     {
         "Budget Management": [goals_page, dashboard_page],
         "Financial Planning": [first_million_page, net_worth_page],
         "Investment Analysis": [fii_comparator_page, compound_calculator_page],
-        "Crypto": [marketcap_of_page, roi_calculator_page, correlation_dashboard_page],
+        "Crypto": [marketcap_of_page, roi_calculator_page, correlation_dashboard_page, price_ratio_page],
     }
 )
 
