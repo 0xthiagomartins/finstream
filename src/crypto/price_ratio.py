@@ -177,6 +177,13 @@ def render_price_ratio_dashboard():
     """Render the price ratio dashboard."""
     st.title("Token Price Ratio Analysis")
     
+    # Initialize session state for tokens if not exists
+    if "token_a" not in st.session_state:
+        st.session_state.token_a = None
+        st.session_state.token_a_data = None
+        st.session_state.token_b = None
+        st.session_state.token_b_data = None
+    
     # Period selection
     period_options = {
         "24 hours": 1,
@@ -193,14 +200,93 @@ def render_price_ratio_dashboard():
         help="Choose the time period for ratio analysis"
     )
     
-    # Token selection
-    col1, col2 = st.columns(2)
+    # Token selection with swap button
+    col1, col2, col3 = st.columns([10, 1, 10])
+    
     with col1:
         token_a, token_a_data = create_token_search("First Token (A)", "token_a")
+        if token_a:
+            st.session_state.token_a = token_a
+            st.session_state.token_a_data = token_a_data
+    
     with col2:
+        # Center the swap button vertically with custom styling
+        st.markdown(
+            """
+            <style>
+                div[data-testid="column"]:nth-of-type(2) {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 200px;
+                }
+                
+                div[data-testid="column"]:nth-of-type(2) button {
+                    background: none;
+                    border: none;
+                    border-radius: 50%;
+                    width: 48px !important;
+                    height: 48px;
+                    padding: 12px;
+                    transition: all 0.2s ease;
+                }
+                
+                div[data-testid="column"]:nth-of-type(2) button:hover {
+                    background: rgba(206, 126, 0, 0.1);
+                }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            "<div style='text-align: center; padding-bottom: 10rem;'></div>",
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            "⇄",  # Unicode swap arrow
+            help="Swap tokens",
+            use_container_width=True,
+        ):
+            # Swap tokens in session state
+            st.session_state.token_a, st.session_state.token_b = st.session_state.token_b, st.session_state.token_a
+            st.session_state.token_a_data, st.session_state.token_b_data = st.session_state.token_b_data, st.session_state.token_a_data
+            
+            # Swap search fragment states
+            st.session_state["token_token_a"], st.session_state["token_token_b"] = st.session_state["token_token_b"], st.session_state["token_token_a"]
+            st.session_state["token_data_token_a"], st.session_state["token_data_token_b"] = st.session_state["token_data_token_b"], st.session_state["token_data_token_a"]
+            
+            # Swap search results
+            st.session_state["results_token_a"], st.session_state["results_token_b"] = st.session_state["results_token_b"], st.session_state["results_token_a"]
+            
+            # Swap search queries
+            st.session_state["search_query_token_a"], st.session_state["search_query_token_b"] = st.session_state["search_query_token_b"], st.session_state["search_query_token_a"]
+            st.rerun()
+    
+    with col3:
         token_b, token_b_data = create_token_search("Second Token (B)", "token_b")
+        if token_b:
+            st.session_state.token_b = token_b
+            st.session_state.token_b_data = token_b_data
+    
+    # Use session state tokens for consistency
+    token_a = st.session_state.token_a
+    token_b = st.session_state.token_b
+    token_a_data = st.session_state.token_a_data
+    token_b_data = st.session_state.token_b_data
     
     if token_a and token_b:
+        # Display token images and names
+        st.markdown("### Selected Tokens")
+        col1, col2 = st.columns(2)
+        with col1:
+            if token_a.get('large'):
+                st.image(token_a['large'], width=64)
+            st.markdown(f"**{token_a['name']} ({token_a['symbol'].upper()})**")
+        with col2:
+            if token_b.get('large'):
+                st.image(token_b['large'], width=64)
+            st.markdown(f"**{token_b['name']} ({token_b['symbol'].upper()})**")
+        
         with st.spinner("Fetching price data and calculating ratios..."):
             # Fetch price data for both tokens
             price_a = fetch_price_history(token_a['id'], period_options[selected_period])
