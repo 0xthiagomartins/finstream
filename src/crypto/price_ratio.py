@@ -332,27 +332,6 @@ def render_price_ratio_dashboard():
                 # Plot price ratio
                 fig = plot_price_ratio(ratio, token_a, token_b, show_ma, show_bollinger)
                 st.plotly_chart(fig, use_container_width=True)
-                
-                # Display ratio table
-                st.markdown("### Detailed Price Ratio Data")
-                
-                # Create DataFrame with aligned data
-                common_index = price_a.index.intersection(price_b.index)
-                ratio_df = pd.DataFrame({
-                    'Date': common_index,
-                    f'{token_a["symbol"].upper()}/USDT': price_a[common_index],
-                    f'{token_b["symbol"].upper()}/USDT': price_b[common_index],
-                    'Ratio': ratio[common_index]
-                })
-                
-                st.dataframe(
-                    ratio_df.style.format({
-                        f'{token_a["symbol"].upper()}/USDT': '${:.8f}',
-                        f'{token_b["symbol"].upper()}/USDT': '${:.8f}',
-                        'Ratio': '{:.8f}'
-                    }),
-                    use_container_width=True
-                )
             else:
                 st.error("Failed to fetch price data for the selected tokens.")
     else:
