@@ -21,22 +21,18 @@ FinStream is a simple and interactive personal finance dashboard built with Stre
 finstream/
 ├── src/                    # Source code
 │   ├── app.py             # Main Streamlit application
+│   ├── config.py          # Configuration file
+│   ├── components/        # App Components Collecations
 │   ├── models/            # Data models
-│   ├── utils/             # Helper functions
-│   └── config/            # Configuration files
-├── tests/                 # Test files
-│   ├── conftest.py
-│   ├── test_models/
-│   └── test_utils/
+│   ├── crypto/            # Crypto Related Pages
+│   ├── budget/            # Budget Related Pages
+│   ├── services/          # Edge Services (Integrations with external APIs, Ex: Coingecko & YFinance Clients)
+│   └── utils/             # Helper functions
 ├── .streamlit/
 │   └── config.toml
-├── sprints/              # Sprint planning and documentation
-│   ├── sprint1/
-│   └── sprint2/
-├── docs/                 # Documentation
+├── data/                 # Persistent Database file (.json, .csv, SQLite)
 ├── requirements.txt      # Project dependencies
-├── README.md
-└── ROADMAP.md
+└── README.md
 ```
 
 ## Installation
@@ -57,7 +53,8 @@ finstream/
    ```
 
 ## Dependencies
-- Python 3.x
+- Python 3.11+
 - Streamlit
 - Pandas
 - Matplotlib / Plotly
+- yFinance & CoinGecko Clients
